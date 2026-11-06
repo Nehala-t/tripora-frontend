@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import img from "../../public/images/destination/destination-hero.avif"
+import img from '../../public/images/destination/destination-hero.avif';
 import Link from 'next/link';
 import {
     Search,
@@ -94,35 +94,36 @@ export default function DestinationsPage() {
             {/* =====================================
           HERO SECTION
       ===================================== */}
-           <section className="relative flex min-h-[400px] items-center justify-center overflow-hidden bg-slate-950 py-14 sm:min-h-[390px]">
-    {/* Background Image */}
-    <div className="absolute inset-0">
-        <img
-            src={img.src}
-            alt="Beautiful travel destination"
-            className="h-full w-full object-cover"
-        />
-    </div>
+            <section className="relative flex min-h-[400px] items-center justify-center overflow-hidden bg-slate-950 py-14 sm:min-h-[390px]">
+                {/* Background Image */}
+                <div className="absolute inset-0">
+                    <img
+                        src={img.src}
+                        alt="Beautiful travel destination"
+                        className="h-full w-full object-cover"
+                    />
+                </div>
 
-    {/* Light Gradient Overlay */}
-    <div className="absolute inset-0 bg-gradient-to-r from-slate-950/30 via-slate-950/15 to-slate-950/30" />
+                {/* Light Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/30 via-slate-950/15 to-slate-950/30" />
 
-    {/* Hero Content */}
-    <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
-        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
-            <Globe2 size={15} />
-            Explore the World
-        </div>
+                {/* Hero Content */}
+                <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
+                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+                        <Globe2 size={15} />
+                        Explore the World
+                    </div>
 
-        <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Explore Destinations
-        </h1>
+                    <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
+                        Explore Destinations
+                    </h1>
 
-        <p className="mx-auto mt-3 max-w-xl text-sm text-white/90 sm:text-base">
-            Discover beautiful places and find your next adventure with Tripora.
-        </p>
-    </div>
-</section>
+                    <p className="mx-auto mt-3 max-w-xl text-sm text-white/90 sm:text-base">
+                        Discover beautiful places and find your next adventure
+                        with Tripora.
+                    </p>
+                </div>
+            </section>
 
             {/* =====================================
           DESTINATIONS SECTION

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -49,17 +48,13 @@ import {
 // CONSTANTS
 // ============================================
 
-type PreferredCurrency =
-    TravelPreferencesFormValues['preferredCurrency'];
+type PreferredCurrency = TravelPreferencesFormValues['preferredCurrency'];
 
-type TravelStyle =
-    TravelPreferencesFormValues['travelStyle'];
+type TravelStyle = TravelPreferencesFormValues['travelStyle'];
 
-type TravelInterest =
-    TravelPreferencesFormValues['travelInterests'][number];
+type TravelInterest = TravelPreferencesFormValues['travelInterests'][number];
 
-type TravelBudget =
-    TravelPreferencesFormValues['budget'];
+type TravelBudget = TravelPreferencesFormValues['budget'];
 
 const TRAVEL_STYLES = [
     'adventure',
@@ -143,9 +138,7 @@ export default function ProfilePage() {
         successMessage,
     } = useSelector((state: RootState) => state.profile);
 
-    const { user: authUser } = useSelector(
-        (state: RootState) => state.auth
-    );
+    const { user: authUser } = useSelector((state: RootState) => state.auth);
 
     // Prefer the latest profile returned by the profile API.
     const currentUser = profile ?? authUser;
@@ -327,8 +320,7 @@ export default function ProfilePage() {
                     ? currentUser.preferredCurrency
                     : 'INR',
 
-            preferredDestinations:
-                currentUser.preferredDestinations || [],
+            preferredDestinations: currentUser.preferredDestinations || [],
 
             travelStyle:
                 typeof currentUser.travelStyle === 'string' &&
@@ -342,34 +334,22 @@ export default function ProfilePage() {
                     ? currentUser.budget
                     : 'Medium',
 
-            travelInterests: (
-                currentUser.travelInterests || []
-            ).filter(
+            travelInterests: (currentUser.travelInterests || []).filter(
                 (interest): interest is TravelInterest =>
                     isTravelInterest(interest)
             ),
         });
 
         resetOperator({
-            businessName:
-                currentUser.operatorProfile?.businessName || '',
+            businessName: currentUser.operatorProfile?.businessName || '',
             businessDescription:
                 currentUser.operatorProfile?.businessDescription || '',
-            businessEmail:
-                currentUser.operatorProfile?.businessEmail || '',
-            businessPhone:
-                currentUser.operatorProfile?.businessPhone || '',
-            website:
-                currentUser.operatorProfile?.website || '',
-            businessAddress:
-                currentUser.operatorProfile?.businessAddress || '',
+            businessEmail: currentUser.operatorProfile?.businessEmail || '',
+            businessPhone: currentUser.operatorProfile?.businessPhone || '',
+            website: currentUser.operatorProfile?.website || '',
+            businessAddress: currentUser.operatorProfile?.businessAddress || '',
         });
-    }, [
-        currentUser,
-        resetProfile,
-        resetPreferences,
-        resetOperator,
-    ]);
+    }, [currentUser, resetProfile, resetPreferences, resetOperator]);
 
     // ============================================
     // SUBMIT PERSONAL PROFILE
@@ -484,9 +464,7 @@ export default function ProfilePage() {
     // ============================================
 
     const toggleInterest = (interest: TravelInterest) => {
-        const updated: TravelInterest[] = selectedInterests.includes(
-            interest
-        )
+        const updated: TravelInterest[] = selectedInterests.includes(interest)
             ? selectedInterests.filter((item) => item !== interest)
             : [...selectedInterests, interest];
 
@@ -892,7 +870,9 @@ export default function ProfilePage() {
 
                                             {operatorProfile?.website ? (
                                                 <a
-                                                    href={operatorProfile.website}
+                                                    href={
+                                                        operatorProfile.website
+                                                    }
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="mt-1 inline-block break-all text-teal-400 transition hover:text-teal-300 hover:underline"

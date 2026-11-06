@@ -677,7 +677,6 @@ export default function OperatorDashboardPage() {
                     status,
                 })
             ).unwrap();
-
         } catch (bookingError) {
             console.error('Booking status update failed:', bookingError);
             return;
