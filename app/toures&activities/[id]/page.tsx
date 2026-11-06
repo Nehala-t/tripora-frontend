@@ -516,7 +516,7 @@ const whatsappUrl = whatsappNumber
             )}
 
             {/* Daily itinerary */}
-            {currentTour.days?.length > 0 && (
+           {currentTour.days?.length && (
               <section className="relative overflow-hidden rounded-3xl border border-blue-100/80 bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/40 p-5 shadow-lg shadow-blue-950/[0.04] sm:p-8">
                 <div className="mb-8 flex items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20">

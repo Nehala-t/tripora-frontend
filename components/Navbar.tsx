@@ -200,7 +200,7 @@ export default function Navbar() {
               avatarUrl: reduxUser.profileImage?.url || undefined,
 
               emailVerified: Boolean(
-    reduxUser.emailVerified ?? reduxUser.isEmailVerified
+    reduxUser.emailVerified ?? reduxUser.emailVerified
 ),
           }
         : null;

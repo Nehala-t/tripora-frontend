@@ -68,7 +68,7 @@ export interface Tour {
   title: string;
   slug: string;
   description: string;
-
+durationMinutes?: number;
   // Overall tour duration
   durationDays: number;
   nights: number;

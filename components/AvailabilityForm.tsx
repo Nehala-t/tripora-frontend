@@ -8,6 +8,7 @@ import { CalendarDays, Loader2, PlusCircle, RotateCcw } from "lucide-react";
 
 import {
   availabilitySchema,
+  updateAvailabilitySchema,
   type AvailabilityFormValues,
 } from "@/validations/availabilitySchema";
 
@@ -56,9 +57,14 @@ export default function AvailabilityForm({
     watch,
     formState: { errors },
   } = useForm<AvailabilityFormValues>({
-    resolver: yupResolver(availabilitySchema),
+    resolver: yupResolver(
+      isEditing ? updateAvailabilitySchema : availabilitySchema
+    ),
     defaultValues: initialValues,
     mode: "onTouched",
+    context: {
+      minimumCapacity,
+    },
   });
 
   const startAt = watch("startAt");
@@ -69,8 +75,17 @@ export default function AvailabilityForm({
   }, [initialValues, reset]);
 
   const nowMin = toLocalDateTimeMin();
+
+  // Editing an existing slot may have a past start/end date.
+  // Creating a new slot must use a future start date.
+  const startMin = isEditing ? undefined : nowMin;
+
   const endMin =
-    startAt && startAt > nowMin ? startAt : nowMin;
+    startAt && (!isEditing || startAt > nowMin)
+      ? startAt
+      : isEditing
+        ? undefined
+        : nowMin;
 
   const inputClass =
     "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100";
@@ -161,7 +176,7 @@ export default function AvailabilityForm({
           <input
             id="availability-start"
             type="datetime-local"
-            min={nowMin}
+            min={startMin}
             {...register("startAt")}
             disabled={isSubmitting}
             className={inputClass}

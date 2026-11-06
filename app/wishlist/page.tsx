@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch, RootState } from "../redux/store";
+import type { AppDispatch, RootState } from "../../redux/store";
 import {
   fetchMyWishlist,
   removeFromWishlist,

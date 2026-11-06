@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -12,9 +13,10 @@ import {
     updateUserProfile,
     updateTravelPreferences,
     uploadProfileAvatar,
-    submitOperatorVerification,
+    updateOperatorBusinessDetails,
     clearProfileError,
     clearProfileSuccessMessage,
+    fetchOperatorProfile,
 } from '@/redux/slices/profileSlice';
 
 import {
@@ -47,6 +49,18 @@ import {
 // CONSTANTS
 // ============================================
 
+type PreferredCurrency =
+    TravelPreferencesFormValues['preferredCurrency'];
+
+type TravelStyle =
+    TravelPreferencesFormValues['travelStyle'];
+
+type TravelInterest =
+    TravelPreferencesFormValues['travelInterests'][number];
+
+type TravelBudget =
+    TravelPreferencesFormValues['budget'];
+
 const TRAVEL_STYLES = [
     'adventure',
     'relaxation',
@@ -55,7 +69,7 @@ const TRAVEL_STYLES = [
     'cultural',
     'family',
     'solo',
-];
+] as const satisfies readonly TravelStyle[];
 
 const TRAVEL_INTERESTS = [
     'adventure',
@@ -66,9 +80,33 @@ const TRAVEL_INTERESTS = [
     'water_sports',
     'wildlife',
     'wellness',
-];
+] as const satisfies readonly TravelInterest[];
 
-const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED'];
+const CURRENCIES = [
+    'INR',
+    'USD',
+    'EUR',
+    'GBP',
+    'AED',
+] as const satisfies readonly PreferredCurrency[];
+
+const TRAVEL_BUDGETS = [
+    'Low',
+    'Medium',
+    'High',
+] as const satisfies readonly TravelBudget[];
+
+const isCurrency = (value: string): value is PreferredCurrency =>
+    CURRENCIES.some((currency) => currency === value);
+
+const isTravelStyle = (value: string): value is TravelStyle =>
+    TRAVEL_STYLES.some((style) => style === value);
+
+const isTravelInterest = (value: string): value is TravelInterest =>
+    TRAVEL_INTERESTS.some((interest) => interest === value);
+
+const isTravelBudget = (value: string): value is TravelBudget =>
+    TRAVEL_BUDGETS.some((budget) => budget === value);
 
 const INPUT_CLASS =
     'w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white outline-none transition focus:border-teal-500';
@@ -105,16 +143,20 @@ export default function ProfilePage() {
         successMessage,
     } = useSelector((state: RootState) => state.profile);
 
-    const { user: authUser } = useSelector((state: RootState) => state.auth);
+    const { user: authUser } = useSelector(
+        (state: RootState) => state.auth
+    );
 
     // Prefer the latest profile returned by the profile API.
-    const currentUser = profile || authUser;
+    const currentUser = profile ?? authUser;
+
+    // Always use the authenticated user's role.
+    // This prevents an old profile response from showing the wrong role.
+    const userRole = authUser?.role ?? currentUser?.role;
 
     // ============================================
     // ROLE-BASED CONDITIONS
     // ============================================
-
-    const userRole = currentUser?.role;
 
     const isTraveler = userRole === 'user';
     const isOperator = userRole === 'operator';
@@ -170,6 +212,20 @@ export default function ProfilePage() {
     useEffect(() => {
         setActiveTab('overview');
     }, [userRole]);
+
+    // ============================================
+    // FETCH ROLE-BASED PROFILE
+    // ============================================
+
+    useEffect(() => {
+        if (!authUser) return;
+
+        if (authUser.role === 'operator') {
+            void dispatch(fetchOperatorProfile());
+        } else {
+            void dispatch(fetchUserProfile());
+        }
+    }, [authUser?.role, dispatch]);
 
     // ============================================
     // PERSONAL PROFILE FORM
@@ -247,14 +303,6 @@ export default function ProfilePage() {
     });
 
     // ============================================
-    // FETCH PROFILE
-    // ============================================
-
-    useEffect(() => {
-        void dispatch(fetchUserProfile());
-    }, [dispatch]);
-
-    // ============================================
     // POPULATE FORMS
     // ============================================
 
@@ -272,23 +320,56 @@ export default function ProfilePage() {
 
         resetPreferences({
             preferredLanguage: currentUser.preferredLanguage || 'en',
-            preferredCurrency: currentUser.preferredCurrency || 'INR',
-            preferredDestinations: currentUser.preferredDestinations || [],
-            travelStyle: currentUser.travelStyle || 'adventure',
-            budget: currentUser.budget || 'Medium',
-            travelInterests: currentUser.travelInterests || [],
+
+            preferredCurrency:
+                typeof currentUser.preferredCurrency === 'string' &&
+                isCurrency(currentUser.preferredCurrency)
+                    ? currentUser.preferredCurrency
+                    : 'INR',
+
+            preferredDestinations:
+                currentUser.preferredDestinations || [],
+
+            travelStyle:
+                typeof currentUser.travelStyle === 'string' &&
+                isTravelStyle(currentUser.travelStyle)
+                    ? currentUser.travelStyle
+                    : 'adventure',
+
+            budget:
+                typeof currentUser.budget === 'string' &&
+                isTravelBudget(currentUser.budget)
+                    ? currentUser.budget
+                    : 'Medium',
+
+            travelInterests: (
+                currentUser.travelInterests || []
+            ).filter(
+                (interest): interest is TravelInterest =>
+                    isTravelInterest(interest)
+            ),
         });
 
         resetOperator({
-            businessName: currentUser.operatorProfile?.businessName || '',
+            businessName:
+                currentUser.operatorProfile?.businessName || '',
             businessDescription:
                 currentUser.operatorProfile?.businessDescription || '',
-            businessEmail: currentUser.operatorProfile?.businessEmail || '',
-            businessPhone: currentUser.operatorProfile?.businessPhone || '',
-            website: currentUser.operatorProfile?.website || '',
-            businessAddress: currentUser.operatorProfile?.businessAddress || '',
+            businessEmail:
+                currentUser.operatorProfile?.businessEmail || '',
+            businessPhone:
+                currentUser.operatorProfile?.businessPhone || '',
+            website:
+                currentUser.operatorProfile?.website || '',
+            businessAddress:
+                currentUser.operatorProfile?.businessAddress || '',
         });
-    }, [currentUser, resetProfile, resetPreferences, resetOperator]);
+    }, [
+        currentUser,
+        resetProfile,
+        resetPreferences,
+        resetOperator,
+    ]);
 
     // ============================================
     // SUBMIT PERSONAL PROFILE
@@ -300,7 +381,7 @@ export default function ProfilePage() {
 
             toast.success('Profile updated successfully!');
 
-            // Navigate to Overview after successful update
+            // Navigate to Overview after successful update.
             setActiveTab('overview');
         } catch (error) {
             toast.error(
@@ -341,7 +422,12 @@ export default function ProfilePage() {
 
         try {
             await dispatch(uploadProfileAvatar(uploadData)).unwrap();
-            await dispatch(fetchUserProfile()).unwrap();
+
+            if (authUser?.role === 'operator') {
+                await dispatch(fetchOperatorProfile()).unwrap();
+            } else {
+                await dispatch(fetchUserProfile()).unwrap();
+            }
         } catch (err) {
             console.error('Profile image upload failed:', err);
         }
@@ -367,9 +453,29 @@ export default function ProfilePage() {
 
     const handleOperatorSubmit = async (values: OperatorFormValues) => {
         try {
-            await dispatch(submitOperatorVerification(values)).unwrap();
-        } catch (err) {
-            console.error('Operator application failed:', err);
+            await dispatch(
+                updateOperatorBusinessDetails({
+                    businessName: String(values.businessName ?? ''),
+                    businessDescription: String(
+                        values.businessDescription ?? ''
+                    ),
+                    businessEmail: String(values.businessEmail ?? ''),
+                    businessPhone: String(values.businessPhone ?? ''),
+                    website: String(values.website ?? ''),
+                    businessAddress: String(values.businessAddress ?? ''),
+                })
+            ).unwrap();
+
+            // Fetch the latest saved operator profile.
+            await dispatch(fetchOperatorProfile()).unwrap();
+
+            toast.success('Business details updated successfully!');
+        } catch (error: unknown) {
+            toast.error(
+                typeof error === 'string'
+                    ? error
+                    : 'Failed to update business details.'
+            );
         }
     };
 
@@ -377,8 +483,10 @@ export default function ProfilePage() {
     // TRAVEL INTERESTS
     // ============================================
 
-    const toggleInterest = (interest: string) => {
-        const updated = selectedInterests.includes(interest)
+    const toggleInterest = (interest: TravelInterest) => {
+        const updated: TravelInterest[] = selectedInterests.includes(
+            interest
+        )
             ? selectedInterests.filter((item) => item !== interest)
             : [...selectedInterests, interest];
 
@@ -452,12 +560,12 @@ export default function ProfilePage() {
 
     const avatarUrl = currentUser?.profileImage?.url;
 
+    const operatorProfile = currentUser?.operatorProfile;
+
     return (
         <div className="min-h-screen bg-slate-950 px-4 py-10 text-slate-100 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-6xl space-y-8">
-                {/* ========================================
-            ALERT BANNERS
-        ======================================== */}
+                {/* ALERT BANNERS */}
 
                 {error && (
                     <div
@@ -503,9 +611,7 @@ export default function ProfilePage() {
                     </div>
                 )}
 
-                {/* ========================================
-            PROFILE HEADER
-        ======================================== */}
+                {/* PROFILE HEADER */}
 
                 <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-2xl backdrop-blur-md">
                     <div className="relative h-44 bg-gradient-to-r from-teal-600 via-emerald-600 to-indigo-700">
@@ -592,9 +698,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        {/* ========================================
-                ROLE-BASED TABS
-            ======================================== */}
+                        {/* ROLE-BASED TABS */}
 
                         <div className="flex gap-2 overflow-x-auto border-b border-slate-800 pt-2 text-sm font-medium">
                             {profileTabs.map((tab) => {
@@ -621,16 +725,14 @@ export default function ProfilePage() {
                     </div>
                 </section>
 
-                {/* ========================================
-            OVERVIEW TAB
-        ======================================== */}
+                {/* OVERVIEW TAB */}
 
                 {activeTab === 'overview' && (
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                         {/* LEFT COLUMN */}
 
                         <div className="space-y-6 md:col-span-2">
-                            {/* ABOUT ME - ALL ROLES */}
+                            {/* ABOUT ME */}
 
                             <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm">
                                 <h2 className="mb-3 text-lg font-semibold text-white">
@@ -655,8 +757,6 @@ export default function ProfilePage() {
                                     </div>
 
                                     <div className="space-y-4">
-                                        {/* TRAVEL STYLE */}
-
                                         <div>
                                             <span className="mb-2 block text-xs uppercase tracking-wider text-slate-400">
                                                 Travel Style
@@ -667,8 +767,6 @@ export default function ProfilePage() {
                                                     'Adventure'}
                                             </span>
                                         </div>
-
-                                        {/* TRAVEL INTERESTS */}
 
                                         <div>
                                             <span className="mb-2 block text-xs uppercase tracking-wider text-slate-400">
@@ -699,8 +797,6 @@ export default function ProfilePage() {
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* PREFERRED DESTINATIONS */}
 
                                         <div>
                                             <span className="mb-2 block text-xs uppercase tracking-wider text-slate-400">
@@ -748,14 +844,23 @@ export default function ProfilePage() {
                                         </h2>
                                     </div>
 
-                                    <div className="space-y-3 text-sm text-slate-300">
+                                    <div className="space-y-4 text-sm text-slate-300">
                                         <div>
                                             <p className="text-xs uppercase tracking-wider text-slate-500">
                                                 Business Name
                                             </p>
                                             <p className="mt-1">
-                                                {currentUser?.operatorProfile
-                                                    ?.businessName ||
+                                                {operatorProfile?.businessName ||
+                                                    'Not added yet'}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs uppercase tracking-wider text-slate-500">
+                                                Business Description
+                                            </p>
+                                            <p className="mt-1 whitespace-pre-wrap leading-relaxed">
+                                                {operatorProfile?.businessDescription ||
                                                     'Not added yet'}
                                             </p>
                                         </div>
@@ -765,8 +870,7 @@ export default function ProfilePage() {
                                                 Business Email
                                             </p>
                                             <p className="mt-1 break-all">
-                                                {currentUser?.operatorProfile
-                                                    ?.businessEmail ||
+                                                {operatorProfile?.businessEmail ||
                                                     'Not added yet'}
                                             </p>
                                         </div>
@@ -776,22 +880,40 @@ export default function ProfilePage() {
                                                 Business Phone
                                             </p>
                                             <p className="mt-1">
-                                                {currentUser?.operatorProfile
-                                                    ?.businessPhone ||
+                                                {operatorProfile?.businessPhone ||
                                                     'Not added yet'}
                                             </p>
                                         </div>
 
                                         <div>
                                             <p className="text-xs uppercase tracking-wider text-slate-500">
-                                                Verification Status
+                                                Website
                                             </p>
-                                            <span className="mt-1 inline-block rounded-full border border-teal-500/20 bg-teal-500/10 px-3 py-1 text-xs capitalize text-teal-300">
-                                                {currentUser?.sellerVerificationStatus?.replaceAll(
-                                                    '_',
-                                                    ' '
-                                                ) || 'Not submitted'}
-                                            </span>
+
+                                            {operatorProfile?.website ? (
+                                                <a
+                                                    href={operatorProfile.website}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="mt-1 inline-block break-all text-teal-400 transition hover:text-teal-300 hover:underline"
+                                                >
+                                                    {operatorProfile.website}
+                                                </a>
+                                            ) : (
+                                                <p className="mt-1">
+                                                    Not added yet
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs uppercase tracking-wider text-slate-500">
+                                                Business Address
+                                            </p>
+                                            <p className="mt-1">
+                                                {operatorProfile?.businessAddress ||
+                                                    'Not added yet'}
+                                            </p>
                                         </div>
                                     </div>
                                 </section>
@@ -846,7 +968,7 @@ export default function ProfilePage() {
                         {/* RIGHT COLUMN */}
 
                         <div className="space-y-6">
-                            {/* CONTACT INFORMATION - ALL ROLES */}
+                            {/* CONTACT INFORMATION */}
 
                             <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm">
                                 <h2 className="text-lg font-semibold text-white">
@@ -870,8 +992,6 @@ export default function ProfilePage() {
                                         </span>
                                     </div>
 
-                                    {/* Currency is relevant to travelers. */}
-
                                     {isTraveler && (
                                         <div className="flex items-start gap-3">
                                             <Globe className="mt-0.5 h-4 w-4 shrink-0 text-teal-400" />
@@ -883,14 +1003,11 @@ export default function ProfilePage() {
                                         </div>
                                     )}
 
-                                    {/* Business email for operators. */}
-
                                     {isOperator && (
                                         <div className="flex items-start gap-3">
                                             <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-400" />
                                             <span className="break-all">
-                                                {currentUser?.operatorProfile
-                                                    ?.businessEmail ||
+                                                {operatorProfile?.businessEmail ||
                                                     'Business email not added'}
                                             </span>
                                         </div>
@@ -898,7 +1015,7 @@ export default function ProfilePage() {
                                 </div>
                             </section>
 
-                            {/* ACCOUNT INFORMATION - ALL ROLES */}
+                            {/* ACCOUNT INFORMATION */}
 
                             <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
                                 <h2 className="mb-3 text-lg font-semibold text-white">
@@ -942,9 +1059,7 @@ export default function ProfilePage() {
                     </div>
                 )}
 
-                {/* ========================================
-            EDIT PROFILE TAB - ALL ROLES
-        ======================================== */}
+                {/* EDIT PROFILE TAB */}
 
                 {activeTab === 'edit' && (
                     <form
@@ -963,8 +1078,6 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            {/* FIRST NAME */}
-
                             <div>
                                 <label className="mb-1 block text-xs text-slate-400">
                                     First Name
@@ -981,8 +1094,6 @@ export default function ProfilePage() {
                                     message={profileErrors.firstName?.message}
                                 />
                             </div>
-
-                            {/* LAST NAME */}
 
                             <div>
                                 <label className="mb-1 block text-xs text-slate-400">
@@ -1001,8 +1112,6 @@ export default function ProfilePage() {
                                 />
                             </div>
 
-                            {/* PHONE */}
-
                             <div>
                                 <label className="mb-1 block text-xs text-slate-400">
                                     Phone Number
@@ -1019,8 +1128,6 @@ export default function ProfilePage() {
                                     message={profileErrors.phone?.message}
                                 />
                             </div>
-
-                            {/* CITY */}
 
                             <div>
                                 <label className="mb-1 block text-xs text-slate-400">
@@ -1039,8 +1146,6 @@ export default function ProfilePage() {
                                 />
                             </div>
 
-                            {/* COUNTRY */}
-
                             <div className="sm:col-span-2">
                                 <label className="mb-1 block text-xs text-slate-400">
                                     Country
@@ -1058,8 +1163,6 @@ export default function ProfilePage() {
                                 />
                             </div>
                         </div>
-
-                        {/* BIO */}
 
                         <div>
                             <label className="mb-1 block text-xs text-slate-400">
@@ -1089,9 +1192,7 @@ export default function ProfilePage() {
                     </form>
                 )}
 
-                {/* ========================================
-            TRAVEL PREFERENCES TAB - TRAVELER ONLY
-        ======================================== */}
+                {/* TRAVEL PREFERENCES TAB */}
 
                 {isTraveler && activeTab === 'preferences' && (
                     <form
@@ -1155,7 +1256,7 @@ export default function ProfilePage() {
                                         onClick={() =>
                                             setPreferenceValue(
                                                 'preferredCurrency',
-                                                currency as TravelPreferencesFormValues['preferredCurrency'],
+                                                currency,
                                                 {
                                                     shouldDirty: true,
                                                     shouldValidate: true,
@@ -1196,7 +1297,7 @@ export default function ProfilePage() {
                                         onClick={() =>
                                             setPreferenceValue(
                                                 'travelStyle',
-                                                style as TravelPreferencesFormValues['travelStyle'],
+                                                style,
                                                 {
                                                     shouldDirty: true,
                                                     shouldValidate: true,
@@ -1331,7 +1432,7 @@ export default function ProfilePage() {
                             </label>
 
                             <div className="flex flex-wrap gap-2">
-                                {['Low', 'Medium', 'High'].map((budget) => (
+                                {TRAVEL_BUDGETS.map((budget) => (
                                     <button
                                         key={budget}
                                         type="button"
@@ -1339,7 +1440,7 @@ export default function ProfilePage() {
                                         onClick={() =>
                                             setPreferenceValue(
                                                 'budget',
-                                                budget as TravelPreferencesFormValues['budget'],
+                                                budget,
                                                 {
                                                     shouldDirty: true,
                                                     shouldValidate: true,
@@ -1377,9 +1478,7 @@ export default function ProfilePage() {
                     </form>
                 )}
 
-                {/* ========================================
-            BUSINESS DETAILS TAB - OPERATOR ONLY
-        ======================================== */}
+                {/* BUSINESS DETAILS TAB */}
 
                 {isOperator && activeTab === 'operator' && (
                     <form
@@ -1398,16 +1497,6 @@ export default function ProfilePage() {
                                 Manage your tour business information on
                                 Tripora.
                             </p>
-                        </div>
-
-                        {/* EXISTING BACKEND WARNING */}
-
-                        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-300">
-                            Your current backend router does not yet define an
-                            operator application endpoint. The form validates
-                            your information, but successful submission requires
-                            that backend endpoint to be implemented and
-                            connected.
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1533,21 +1622,6 @@ export default function ProfilePage() {
                             />
                         </div>
 
-                        {/* VERIFICATION STATUS */}
-
-                        <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
-                            <p className="text-xs uppercase tracking-wider text-slate-500">
-                                Application Status
-                            </p>
-
-                            <p className="mt-2 text-sm font-medium capitalize text-teal-400">
-                                {currentUser?.sellerVerificationStatus?.replaceAll(
-                                    '_',
-                                    ' '
-                                ) || 'Not submitted'}
-                            </p>
-                        </div>
-
                         <button
                             type="submit"
                             disabled={updating}
@@ -1556,7 +1630,7 @@ export default function ProfilePage() {
                             {updating && (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                             )}
-                            Validate &amp; Submit Details
+                            Save Business Details
                         </button>
                     </form>
                 )}

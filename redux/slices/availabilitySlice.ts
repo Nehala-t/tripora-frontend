@@ -104,6 +104,10 @@ interface AvailabilityState {
   message: string | null;
 }
 
+// ============================================
+// INITIAL STATE
+// ============================================
+
 const initialState: AvailabilityState = {
   slots: [],
   total: 0,
@@ -115,14 +119,24 @@ const initialState: AvailabilityState = {
   message: null,
 };
 
+// ============================================
+// ERROR HANDLER
+// ============================================
+
 const getErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
-    return (
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      "An availability request failed."
-    );
+    const responseMessage = error.response?.data?.message;
+    const responseError = error.response?.data?.error;
+
+    if (typeof responseMessage === "string") {
+      return responseMessage;
+    }
+
+    if (typeof responseError === "string") {
+      return responseError;
+    }
+
+    return error.message || "An availability request failed.";
   }
 
   return error instanceof Error
@@ -184,38 +198,27 @@ export const createAvailabilitySlot = createAsyncThunk<
 // UPDATE AVAILABILITY SLOT
 // PATCH /api/availability/:id
 // ============================================
-export const updateAvailabilitySlot = createAsyncThunk(
+
+export const updateAvailabilitySlot = createAsyncThunk<
+  AvailabilityResponse,
+  UpdateAvailabilityPayload,
+  { rejectValue: string }
+>(
   "availability/updateAvailabilitySlot",
-  async (
-    {
-      slotId,
-      updates,
-    }: {
-      slotId: string;
-      updates: Record<string, unknown>;
-    },
-    { rejectWithValue }
-  ) => {
+  async ({ slotId, updates }, { rejectWithValue }) => {
     try {
       if (!slotId || slotId === "undefined") {
-        return rejectWithValue("Availability slot ID is missing");
+        return rejectWithValue("Availability slot ID is missing.");
       }
 
-      const response = await api.patch(
+      const response = await api.patch<AvailabilityResponse>(
         `/availability/${slotId}`,
         updates
       );
 
       return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return rejectWithValue(
-          error.response?.data?.message ||
-            "Failed to update availability"
-        );
-      }
-
-      return rejectWithValue("Failed to update availability");
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error));
     }
   }
 );
@@ -309,20 +312,28 @@ const availabilitySlice = createSlice({
     clearAvailabilityError(state) {
       state.error = null;
     },
+
     clearAvailabilityMessage(state) {
       state.message = null;
     },
+
     clearAvailabilityState() {
       return initialState;
     },
   },
+
   extraReducers: (builder) => {
     builder
+
+      // ========================================
       // FETCH
+      // ========================================
+
       .addCase(fetchOperatorAvailability.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
+
       .addCase(
         fetchOperatorAvailability.fulfilled,
         (state, action) => {
@@ -333,50 +344,67 @@ const availabilitySlice = createSlice({
           state.pages = action.payload.pages ?? 1;
         }
       )
+
       .addCase(
         fetchOperatorAvailability.rejected,
         (state, action) => {
           state.loading = false;
           state.error =
-            action.payload || "Unable to load availability slots.";
+            action.payload ?? action.error.message ??
+            "Unable to load availability slots.";
         }
       )
 
+      // ========================================
       // CREATE
+      // ========================================
+
       .addCase(createAvailabilitySlot.pending, (state) => {
         state.actionLoading = true;
         state.error = null;
         state.message = null;
       })
+
       .addCase(createAvailabilitySlot.fulfilled, (state, action) => {
         state.actionLoading = false;
+
         if (action.payload.slot) {
           state.slots.push(action.payload.slot);
+
           state.slots.sort(
             (a, b) =>
               new Date(a.startAt).getTime() -
               new Date(b.startAt).getTime()
           );
+
           state.total += 1;
         }
+
         state.message =
           action.payload.message ||
           "Availability slot created successfully.";
       })
+
       .addCase(createAvailabilitySlot.rejected, (state, action) => {
         state.actionLoading = false;
         state.error =
-          action.payload || "Unable to create availability slot.";
+          action.payload ?? action.error.message ??
+          "Unable to create availability slot.";
       })
 
+      // ========================================
       // UPDATE
+      // ========================================
+
       .addCase(updateAvailabilitySlot.pending, (state) => {
         state.actionLoading = true;
         state.error = null;
         state.message = null;
       })
+
       .addCase(updateAvailabilitySlot.fulfilled, (state, action) => {
         state.actionLoading = false;
+
         const updated = action.payload.slot;
 
         if (updated) {
@@ -393,20 +421,28 @@ const availabilitySlice = createSlice({
           action.payload.message ||
           "Availability slot updated successfully.";
       })
+
       .addCase(updateAvailabilitySlot.rejected, (state, action) => {
         state.actionLoading = false;
+
         state.error =
-          action.payload || "Unable to update availability slot.";
+          action.payload ?? action.error.message ??
+          "Unable to update availability slot.";
       })
 
+      // ========================================
       // BLOCK
+      // ========================================
+
       .addCase(blockAvailabilitySlot.pending, (state) => {
         state.actionLoading = true;
         state.error = null;
         state.message = null;
       })
+
       .addCase(blockAvailabilitySlot.fulfilled, (state, action) => {
         state.actionLoading = false;
+
         const updated = action.payload.slot;
 
         if (updated) {
@@ -422,20 +458,28 @@ const availabilitySlice = createSlice({
         state.message =
           action.payload.message || "Availability slot blocked.";
       })
+
       .addCase(blockAvailabilitySlot.rejected, (state, action) => {
         state.actionLoading = false;
+
         state.error =
-          action.payload || "Unable to block availability slot.";
+          action.payload ?? action.error.message ??
+          "Unable to block availability slot.";
       })
 
+      // ========================================
       // UNBLOCK
+      // ========================================
+
       .addCase(unblockAvailabilitySlot.pending, (state) => {
         state.actionLoading = true;
         state.error = null;
         state.message = null;
       })
+
       .addCase(unblockAvailabilitySlot.fulfilled, (state, action) => {
         state.actionLoading = false;
+
         const updated = action.payload.slot;
 
         if (updated) {
@@ -451,33 +495,49 @@ const availabilitySlice = createSlice({
         state.message =
           action.payload.message || "Availability slot unblocked.";
       })
+
       .addCase(unblockAvailabilitySlot.rejected, (state, action) => {
         state.actionLoading = false;
+
         state.error =
-          action.payload || "Unable to unblock availability slot.";
+          action.payload ?? action.error.message ??
+          "Unable to unblock availability slot.";
       })
 
+      // ========================================
       // DELETE
+      // ========================================
+
       .addCase(deleteAvailabilitySlot.pending, (state) => {
         state.actionLoading = true;
         state.error = null;
         state.message = null;
       })
+
       .addCase(deleteAvailabilitySlot.fulfilled, (state, action) => {
         state.actionLoading = false;
+
         state.slots = state.slots.filter(
           (slot) => slot._id !== action.payload.slotId
         );
+
         state.total = Math.max(0, state.total - 1);
         state.message = action.payload.message;
       })
+
       .addCase(deleteAvailabilitySlot.rejected, (state, action) => {
         state.actionLoading = false;
+
         state.error =
-          action.payload || "Unable to delete availability slot.";
+          action.payload ?? action.error.message ??
+          "Unable to delete availability slot.";
       });
   },
 });
+
+// ============================================
+// EXPORTS
+// ============================================
 
 export const {
   clearAvailabilityError,

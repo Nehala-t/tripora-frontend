@@ -64,6 +64,19 @@ interface ProfileApiResponse {
       };
 }
 
+interface OperatorProfileApiResponse {
+  success?: boolean;
+  message?: string;
+  operator?: AuthUser;
+  operatorProfile?: OperatorProfileData;
+  data?: {
+    operator?: AuthUser;
+    operatorProfile?: OperatorProfileData;
+    user?: AuthUser;
+    profile?: AuthUser;
+  };
+}
+
 interface ProfileState {
   profile: AuthUser | null;
   loading: boolean;
@@ -123,7 +136,13 @@ function getErrorMessage(error: unknown): string {
     : "Something went wrong.";
 }
 
-function extractProfileData(response: ProfileApiResponse): AuthUser | null {
+// ========================================
+// EXTRACT USER PROFILE
+// ========================================
+
+function extractProfileData(
+  response: ProfileApiResponse
+): AuthUser | null {
   if (response.user) return response.user;
   if (response.profile) return response.profile;
 
@@ -141,31 +160,71 @@ function extractProfileData(response: ProfileApiResponse): AuthUser | null {
   return null;
 }
 
+// ========================================
+// EXTRACT OPERATOR PROFILE
+// ========================================
+
+function extractOperatorProfile(
+  response: OperatorProfileApiResponse
+): AuthUser | null {
+  const operator =
+    response.operator ??
+    response.data?.operator ??
+    response.data?.user ??
+    response.data?.profile;
+
+  if (!operator) {
+    return null;
+  }
+
+  const businessDetails =
+    response.operatorProfile ??
+    response.data?.operatorProfile;
+
+  if (!businessDetails) {
+    return operator;
+  }
+
+  return {
+    ...operator,
+    operatorProfile: {
+      ...operator.operatorProfile,
+      ...businessDetails,
+    },
+  };
+}
+
+// ========================================
+// REQUEST PROFILE
+// ========================================
+
 async function requestProfile(
   request: Promise<{ data: ProfileApiResponse }>
 ): Promise<AuthUser> {
   const response = await request;
   const profile = extractProfileData(response.data);
 
-  // Some controllers return only a success message.
-  // In that case, fetch the updated profile from the backend.
   if (profile) return profile;
 
   const refreshedResponse = await api.get<ProfileApiResponse>(
     "/user-profile/me"
   );
 
-  const refreshedProfile = extractProfileData(refreshedResponse.data);
+  const refreshedProfile = extractProfileData(
+    refreshedResponse.data
+  );
 
   if (!refreshedProfile) {
-    throw new Error("The server did not return updated profile data.");
+    throw new Error(
+      "The server did not return updated profile data."
+    );
   }
 
   return refreshedProfile;
 }
 
 // ========================================
-// FETCH PROFILE
+// FETCH USER PROFILE
 // GET /user-profile/me
 // ========================================
 
@@ -184,10 +243,44 @@ export const fetchUserProfile = createAsyncThunk<
       const profile = extractProfileData(response.data);
 
       if (!profile) {
-        return rejectWithValue("Profile data was not returned by the server.");
+        return rejectWithValue(
+          "Profile data was not returned by the server."
+        );
       }
 
       return profile;
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+// ========================================
+// FETCH OPERATOR PROFILE
+// GET /operator-profile/me
+// ========================================
+
+export const fetchOperatorProfile = createAsyncThunk<
+  AuthUser,
+  void,
+  ThunkConfig
+>(
+  "profile/fetchOperatorProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get<OperatorProfileApiResponse>(
+        "/operator-profile/me"
+      );
+
+      const operator = extractOperatorProfile(response.data);
+
+      if (!operator) {
+        return rejectWithValue(
+          "Operator profile data was not returned by the server."
+        );
+      }
+
+      return operator;
     } catch (error: unknown) {
       return rejectWithValue(getErrorMessage(error));
     }
@@ -280,7 +373,6 @@ export const updateNotificationPreferences = createAsyncThunk<
 // ========================================
 // UPLOAD PROFILE IMAGE
 // PATCH /user-profile/image
-// Field name: profileImage
 // ========================================
 
 export const uploadProfileAvatar = createAsyncThunk<
@@ -304,20 +396,41 @@ export const uploadProfileAvatar = createAsyncThunk<
 );
 
 // ========================================
-// OPERATOR APPLICATION
-// No matching endpoint exists in the router provided.
+// UPDATE OPERATOR BUSINESS DETAILS
+// PATCH /operator-profile/business
 // ========================================
 
-export const submitOperatorVerification = createAsyncThunk<
+export const updateOperatorBusinessDetails = createAsyncThunk<
   AuthUser,
   OperatorProfileData,
   ThunkConfig
 >(
-  "profile/submitOperatorVerification",
-  async (_, { rejectWithValue }) => {
-    return rejectWithValue(
-      "Operator application is not connected yet. Add an operator application endpoint to the backend first."
-    );
+  "profile/updateOperatorBusinessDetails",
+  async (businessData, { rejectWithValue }) => {
+    try {
+      // Save operator business details.
+      await api.patch(
+        "/operator-profile/business",
+        businessData
+      );
+
+      // Fetch the complete updated operator profile.
+      const response = await api.get<OperatorProfileApiResponse>(
+        "/operator-profile/me"
+      );
+
+      const operator = extractOperatorProfile(response.data);
+
+      if (!operator) {
+        return rejectWithValue(
+          "Business details were saved, but the updated operator profile could not be retrieved."
+        );
+      }
+
+      return operator;
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error));
+    }
   }
 );
 
@@ -354,112 +467,172 @@ const profileSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      // Fetch
+
+      // ========================================
+      // FETCH USER PROFILE
+      // ========================================
+
       .addCase(fetchUserProfile.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
+
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.profile = action.payload;
         state.error = null;
       })
+
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.loading = false;
         state.error =
           action.payload || "Failed to load profile details.";
       })
 
-      // Update personal profile
+      // ========================================
+      // FETCH OPERATOR PROFILE
+      // ========================================
+
+      .addCase(fetchOperatorProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+
+      .addCase(fetchOperatorProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.profile = action.payload;
+        state.error = null;
+      })
+
+      .addCase(fetchOperatorProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload || "Failed to load operator profile.";
+      })
+
+      // ========================================
+      // UPDATE PERSONAL PROFILE
+      // ========================================
+
       .addCase(updateUserProfile.pending, (state) => {
         state.updating = true;
         state.error = null;
         state.successMessage = null;
       })
+
       .addCase(updateUserProfile.fulfilled, (state, action) => {
         state.updating = false;
         state.profile = action.payload;
         state.successMessage = "Profile updated successfully!";
         state.error = null;
       })
+
       .addCase(updateUserProfile.rejected, (state, action) => {
         state.updating = false;
         state.error =
           action.payload || "Failed to update profile.";
       })
 
-      // Travel preferences
+      // ========================================
+      // TRAVEL PREFERENCES
+      // ========================================
+
       .addCase(updateTravelPreferences.pending, (state) => {
         state.updating = true;
         state.error = null;
         state.successMessage = null;
       })
+
       .addCase(updateTravelPreferences.fulfilled, (state, action) => {
         state.updating = false;
         state.profile = action.payload;
-        state.successMessage = "Travel preferences updated successfully!";
+        state.successMessage =
+          "Travel preferences updated successfully!";
+        state.error = null;
       })
+
       .addCase(updateTravelPreferences.rejected, (state, action) => {
         state.updating = false;
         state.error =
           action.payload || "Failed to update travel preferences.";
       })
 
-      // Notification preferences
+      // ========================================
+      // NOTIFICATION PREFERENCES
+      // ========================================
+
       .addCase(updateNotificationPreferences.pending, (state) => {
         state.updating = true;
         state.error = null;
         state.successMessage = null;
       })
+
       .addCase(updateNotificationPreferences.fulfilled, (state, action) => {
         state.updating = false;
         state.profile = action.payload;
         state.successMessage =
           "Notification preferences updated successfully!";
+        state.error = null;
       })
+
       .addCase(updateNotificationPreferences.rejected, (state, action) => {
         state.updating = false;
         state.error =
           action.payload || "Failed to update notification preferences.";
       })
 
-      // Avatar upload
+      // ========================================
+      // AVATAR UPLOAD
+      // ========================================
+
       .addCase(uploadProfileAvatar.pending, (state) => {
         state.uploadingAvatar = true;
         state.error = null;
         state.successMessage = null;
       })
+
       .addCase(uploadProfileAvatar.fulfilled, (state, action) => {
         state.uploadingAvatar = false;
         state.profile = action.payload;
-        state.successMessage = "Profile picture updated successfully!";
+        state.successMessage =
+          "Profile picture updated successfully!";
         state.error = null;
       })
+
       .addCase(uploadProfileAvatar.rejected, (state, action) => {
         state.uploadingAvatar = false;
         state.error =
           action.payload || "Failed to upload profile picture.";
       })
 
-      // Operator application
-      .addCase(submitOperatorVerification.pending, (state) => {
+      // ========================================
+      // UPDATE OPERATOR BUSINESS DETAILS
+      // ========================================
+
+      .addCase(updateOperatorBusinessDetails.pending, (state) => {
         state.updating = true;
         state.error = null;
         state.successMessage = null;
       })
-      .addCase(submitOperatorVerification.fulfilled, (state, action) => {
+
+      .addCase(updateOperatorBusinessDetails.fulfilled, (state, action) => {
         state.updating = false;
         state.profile = action.payload;
-        state.successMessage =
-          "Operator application submitted successfully!";
+        state.error = null;
+        state.successMessage = null;
       })
-      .addCase(submitOperatorVerification.rejected, (state, action) => {
+
+      .addCase(updateOperatorBusinessDetails.rejected, (state, action) => {
         state.updating = false;
         state.error =
-          action.payload || "Failed to submit operator application.";
+          action.payload || "Failed to update business details.";
       });
   },
 });
+
+// ========================================
+// EXPORTS
+// ========================================
 
 export const {
   setProfile,

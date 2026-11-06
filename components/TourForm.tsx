@@ -15,6 +15,7 @@ import {
   FiX,
 } from "react-icons/fi";
 
+
 import type {
   DestinationOption,
   CategoryOption,

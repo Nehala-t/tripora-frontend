@@ -233,8 +233,6 @@ useEffect(() => {
           className="destinationSwiper !pb-3"
         >
           {destinations.slice(0, 6).map((destination) => {
-            console.log("DESTINATION:", destination.name);
-  console.log("DESTINATION IMAGES:", destination.images);
 const imageUrl = destination.image?.url;
             return (
               <SwiperSlide key={destination._id}>

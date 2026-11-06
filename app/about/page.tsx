@@ -12,7 +12,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { useDispatch } from "react-redux";
-import { useAppDispatch } from "@/redux/hooks"; // replace path with your redux hooks file
+import { useAppDispatch } from "@/lib/hooks"; // replace path with your redux hooks file
 export default function AboutPage() {
   const stats = [
     { label: "Happy Travelers", value: "150K+" },
