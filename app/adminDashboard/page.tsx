@@ -20,6 +20,10 @@ import {
     AlertTriangle,
     CalendarDays,
     Star,
+    FolderTree,
+    MapPin,
+    Plus,
+    Pencil,
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -37,6 +41,15 @@ import {
     deleteAdminTour,
     clearAdminError,
     clearAdminSuccessMessage,
+    fetchAllCategories,
+    fetchAllDestinations,
+    createCategory,
+    updateCategory,
+    updateCategoryStatus,
+    deleteCategory,
+    createDestination,
+    updateDestination,
+    deleteDestination,
 } from '@/redux/slices/adminSlice';
 
 // ============================================
@@ -49,7 +62,9 @@ type Tab =
     | 'users'
     | 'tours'
     | 'bookings'
-    | 'reviews';
+    | 'reviews'
+    | 'categories'
+    | 'destinations';
 
 type AccountStatus = 'active' | 'inactive';
 
@@ -537,14 +552,74 @@ export default function AdminDashboardPage() {
         loadingReviews,
         actionLoading,
         error,
+        categories,
+        destinations,
+        loadingCategories,
+        loadingDestinations,
         successMessage,
     } = useSelector((state: RootState) => state.admin);
+
+    const validTabs: Tab[] = [
+    'overview',
+    'operators',
+    'users',
+    'tours',
+    'bookings',
+    'reviews',
+    'categories',
+    'destinations',
+];
+     const [activeTab, setActiveTab] = useState<Tab>(() => {
+    if (typeof window === 'undefined') {
+        return 'overview';
+    }
+
+    const savedTab = localStorage.getItem('adminActiveTab');
+
+    return savedTab && validTabs.includes(savedTab as Tab)
+        ? (savedTab as Tab)
+        : 'overview';
+});
+    // ============================================
+    // CATEGORY MANAGEMENT STATE
+    // ============================================
+    const [pendingDestinationDelete, setPendingDestinationDelete] = useState<
+        string | null
+    >(null);
+    const [categorySearch, setCategorySearch] = useState('');
+
+    const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
+        null
+    );
+
+    const [categoryName, setCategoryName] = useState('');
+    const [categoryDescription, setCategoryDescription] = useState('');
+    const [categoryImage, setCategoryImage] = useState<File | null>(null);
+
+    // ============================================
+    // DESTINATION MANAGEMENT STATE
+    // ============================================
+
+    const [destinationSearch, setDestinationSearch] = useState('');
+
+    const [editingDestinationId, setEditingDestinationId] = useState<
+        string | null
+    >(null);
+    const [destinationBestTimeToVisit, setDestinationBestTimeToVisit] =
+        useState('');
+    const [destinationName, setDestinationName] = useState('');
+    const [destinationDescription, setDestinationDescription] = useState('');
+    const [destinationCountry, setDestinationCountry] = useState('');
+    const [destinationRegion, setDestinationRegion] = useState('');
+    const [destinationHighlights, setDestinationHighlights] = useState('');
+    const [destinationLatitude, setDestinationLatitude] = useState('');
+    const [destinationLongitude, setDestinationLongitude] = useState('');
+    const [destinationImage, setDestinationImage] = useState<File | null>(null);
 
     // ============================================
     // LOCAL STATE
     // ============================================
-
-    const [activeTab, setActiveTab] = useState<Tab>('overview');
+   const [hasRestoredTab, setHasRestoredTab] = useState(false);
 
     const [operatorSearch, setOperatorSearch] = useState('');
     const [userSearch, setUserSearch] = useState('');
@@ -571,6 +646,52 @@ export default function AdminDashboardPage() {
         (tour) => recordId(tour) === selectedTourId
     );
 
+    // ============================================
+    // RESTORE ADMIN DASHBOARD TAB
+    // ============================================
+
+    useEffect(() => {
+        try {
+            const savedTab = localStorage.getItem('tripora_admin_active_tab');
+
+            const validTabs: Tab[] = [
+                'overview',
+                'operators',
+                'users',
+                'tours',
+                'bookings',
+                'reviews',
+                'categories',
+                'destinations',
+            ];
+
+        } catch (storageError) {
+            console.error(
+                'Unable to restore admin dashboard tab:',
+                storageError
+            );
+        } finally {
+            setHasRestoredTab(true);
+        }
+    }, []);
+
+    
+
+
+
+    // ============================================
+    // SAVE ADMIN DASHBOARD TAB
+    // ============================================
+
+    useEffect(() => {
+        if (!hasRestoredTab) return;
+
+        try {
+            localStorage.setItem('tripora_admin_active_tab', activeTab);
+        } catch (storageError) {
+            console.error('Unable to save admin dashboard tab:', storageError);
+        }
+    }, [activeTab, hasRestoredTab]);
     // ============================================
     // TOAST NOTIFICATIONS
     // ============================================
@@ -600,6 +721,10 @@ export default function AdminDashboardPage() {
         dispatch(fetchAllTours());
         dispatch(fetchAllBookings());
         dispatch(fetchAllReviews({ page: 1, limit: 10 }));
+
+        // New management data
+        dispatch(fetchAllCategories());
+        dispatch(fetchAllDestinations());
     }, [dispatch]);
 
     useEffect(() => {
@@ -680,7 +805,7 @@ export default function AdminDashboardPage() {
                 tour.title,
                 tour.slug,
                 tour.status,
-                destinationName(tour),
+                destinationName,
                 operatorName(tour),
             ]
                 .filter(Boolean)
@@ -827,6 +952,304 @@ export default function AdminDashboardPage() {
     };
 
     // ============================================
+    // CATEGORY MANAGEMENT
+    // ============================================
+
+    const resetCategoryForm = () => {
+        setEditingCategoryId(null);
+        setCategoryName('');
+        setCategoryDescription('');
+        setCategoryImage(null);
+    };
+
+    const handleEditCategory = (category: {
+        _id: string;
+        name: string;
+        description?: string;
+    }) => {
+        setEditingCategoryId(category._id);
+        setCategoryName(category.name);
+        setCategoryDescription(category.description || '');
+        setCategoryImage(null);
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCategorySubmit = async (
+        event: React.FormEvent<HTMLFormElement>
+    ) => {
+        event.preventDefault();
+
+        if (!categoryName.trim()) {
+            toast.error('Please enter a category name.');
+            return;
+        }
+
+        // Debug: Check selected image
+        console.log('Category image selected:', categoryImage);
+
+        try {
+            if (editingCategoryId) {
+                console.log('Updating category:', editingCategoryId);
+
+                await dispatch(
+                    updateCategory({
+                        categoryId: editingCategoryId,
+                        name: categoryName.trim(),
+                        description: categoryDescription.trim(),
+                        ...(categoryImage instanceof File
+                            ? { image: categoryImage }
+                            : {}),
+                    })
+                ).unwrap();
+
+                console.log('Category updated successfully');
+            } else {
+                console.log('Creating new category');
+
+                await dispatch(
+                    createCategory({
+                        name: categoryName.trim(),
+                        description: categoryDescription.trim(),
+                        ...(categoryImage instanceof File
+                            ? { image: categoryImage }
+                            : {}),
+                    })
+                ).unwrap();
+
+                console.log('Category created successfully');
+            }
+
+            resetCategoryForm();
+
+            await dispatch(fetchAllCategories()).unwrap();
+        } catch (error) {
+            console.error('CATEGORY SUBMISSION ERROR:', error);
+        }
+    };
+
+    const handleCategoryStatus = async (
+        categoryId: string,
+        isActive: boolean
+    ) => {
+        try {
+            await dispatch(
+                updateCategoryStatus({
+                    categoryId,
+                    isActive: !isActive,
+                })
+            ).unwrap();
+
+            dispatch(fetchAllCategories());
+        } catch {
+            // Redux error is displayed through the existing toast effect.
+        }
+    };
+
+    const handleDeleteCategory = (categoryId: string) => {
+        setConfirmationDialog({
+            title: 'Delete Category',
+            message:
+                'Are you sure you want to delete this category? This action cannot be undone.',
+            confirmLabel: 'Delete Category',
+            variant: 'danger',
+
+            onConfirm: async () => {
+                await dispatch(deleteCategory({ categoryId })).unwrap();
+
+                dispatch(fetchAllCategories());
+
+                if (editingCategoryId === categoryId) {
+                    resetCategoryForm();
+                }
+            },
+        });
+    };
+
+    const filteredCategories = (categories || []).filter((category) => {
+        const search = categorySearch.trim().toLowerCase();
+
+        return (
+            category.name.toLowerCase().includes(search) ||
+            category.slug.toLowerCase().includes(search)
+        );
+    });
+
+    // ============================================
+    // DESTINATION MANAGEMENT
+    // ============================================
+
+    const resetDestinationForm = () => {
+        setEditingDestinationId(null);
+        setDestinationName('');
+        setDestinationDescription('');
+        setDestinationCountry('');
+        setDestinationRegion('');
+        setDestinationBestTimeToVisit('');
+        setDestinationHighlights('');
+        setDestinationLatitude('');
+        setDestinationLongitude('');
+        setDestinationImage(null);
+    };
+
+    const handleEditDestination = (destination: {
+        _id: string;
+        name: string;
+        description?: string;
+        country?: string;
+        region?: string;
+        bestTimeToVisit?: string;
+        highlights?: string[];
+        coordinates?: {
+            latitude?: number;
+            longitude?: number;
+            lat?: number;
+            lng?: number;
+        };
+    }) => {
+        setEditingDestinationId(destination._id);
+        setDestinationName(destination.name);
+        setDestinationDescription(destination.description || '');
+        setDestinationCountry(destination.country || '');
+        setDestinationRegion(destination.region || '');
+        setDestinationHighlights((destination.highlights || []).join(', '));
+        setDestinationBestTimeToVisit(destination.bestTimeToVisit || '');
+        setDestinationLatitude(
+            String(
+                destination.coordinates?.latitude ??
+                    destination.coordinates?.lat ??
+                    ''
+            )
+        );
+
+        setDestinationLongitude(
+            String(
+                destination.coordinates?.longitude ??
+                    destination.coordinates?.lng ??
+                    ''
+            )
+        );
+
+        setDestinationImage(null);
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDestinationSubmit = async (
+        event: React.FormEvent<HTMLFormElement>
+    ) => {
+        event.preventDefault();
+
+        if (
+            !destinationName.trim() ||
+            !destinationDescription.trim() ||
+            !destinationCountry.trim()
+        ) {
+            toast.error(
+                'Please enter the destination name, description, and country.'
+            );
+            return;
+        }
+
+        // A destination image is required when creating a new destination.
+        // During editing, the existing saved image can be retained.
+        if (!editingDestinationId && !destinationImage) {
+            toast.error('Please upload a destination image.');
+            return;
+        }
+
+        // Coordinates are required by the backend.
+        if (!destinationLatitude.trim() || !destinationLongitude.trim()) {
+            toast.error('Please enter both latitude and longitude.');
+            return;
+        }
+
+        const latitude = Number(destinationLatitude);
+        const longitude = Number(destinationLongitude);
+
+        // Validate latitude
+        if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+            toast.error('Latitude must be between -90 and 90.');
+            return;
+        }
+
+        // Validate longitude
+        if (
+            !Number.isFinite(longitude) ||
+            longitude < -180 ||
+            longitude > 180
+        ) {
+            toast.error('Longitude must be between -180 and 180.');
+            return;
+        }
+
+        const destinationData = {
+            name: destinationName.trim(),
+            description: destinationDescription.trim(),
+            country: destinationCountry.trim(),
+            region: destinationRegion.trim(),
+            bestTimeToVisit: destinationBestTimeToVisit.trim(),
+
+            coordinates: {
+                latitude,
+                longitude,
+            },
+
+            highlights: destinationHighlights
+                .split(',')
+                .map((item) => item.trim())
+                .filter(Boolean),
+
+            ...(destinationImage && {
+                image: destinationImage,
+            }),
+        };
+
+        try {
+            if (editingDestinationId) {
+                await dispatch(
+                    updateDestination({
+                        destinationId: editingDestinationId,
+                        ...destinationData,
+                    })
+                ).unwrap();
+            } else {
+                await dispatch(createDestination(destinationData)).unwrap();
+            }
+
+            resetDestinationForm();
+            dispatch(fetchAllDestinations());
+        } catch {
+            // Redux error is displayed through the existing toast effect.
+        }
+    };
+    const handleDeleteDestination = async (destinationId: string) => {
+        try {
+            await dispatch(deleteDestination({ destinationId })).unwrap();
+
+            dispatch(fetchAllDestinations());
+        } catch {
+            // Redux error is displayed through the existing toast effect.
+            // Keep the modal open if deletion fails.
+        }
+    };
+
+    const filteredDestinations = (destinations || []).filter((destination) => {
+        const search = destinationSearch.trim().toLowerCase();
+
+        return [
+            destination.name,
+            destination.slug,
+            destination.country,
+            destination.region,
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+            .includes(search);
+    });
+
+    // ============================================
     // CONFIRM MODAL ACTION
     // ============================================
 
@@ -903,6 +1326,8 @@ export default function AdminDashboardPage() {
         { id: 'operators', label: 'Manage Operators', icon: Building2 },
         { id: 'users', label: 'Manage Users', icon: Users },
         { id: 'tours', label: 'Manage Trips', icon: MapPinned },
+        { id: 'categories', label: 'Categories', icon: FolderTree },
+        { id: 'destinations', label: 'Destinations', icon: MapPin },
         { id: 'bookings', label: 'Bookings', icon: CalendarDays },
         { id: 'reviews', label: 'Reviews', icon: Star },
     ];
@@ -1049,126 +1474,240 @@ export default function AdminDashboardPage() {
                 {/* OVERVIEW */}
                 {/* ====================================== */}
 
-                {activeTab === 'overview' && (
-                    <section className="space-y-6">
-                        <div>
-                            <h2 className="text-lg font-bold text-gray-900">
-                                Dashboard Overview
-                            </h2>
+             
+{activeTab === 'overview' && (
+    <section className="space-y-6">
+        {/* OVERVIEW HEADER */}
+        <div>
+            <h2 className="text-lg font-bold text-gray-900">
+                Dashboard Overview
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+                Monitor and manage your Tripora marketplace from one place.
+            </p>
+        </div>
 
-                            <p className="mt-1 text-sm text-gray-500">
-                                A quick overview of your Tripora marketplace.
-                            </p>
-                        </div>
+        {/* OVERVIEW STATISTICS */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                            {/* OPERATORS CARD */}
+            {/* OPERATORS */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">
+                            Total Operators
+                        </p>
+                        <p className="mt-2 text-3xl font-bold text-gray-900">
+                            {allOperators.length}
+                        </p>
+                    </div>
+                    <span className="rounded-xl bg-indigo-50 p-3 text-indigo-600">
+                        <Building2 size={22} />
+                    </span>
+                </div>
 
-                            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <span className="rounded-xl bg-indigo-50 p-3 text-indigo-600">
-                                        <Building2 size={22} />
-                                    </span>
+                <p className="mt-3 text-xs text-gray-500">
+                    {allOperators.filter(
+                        (operator) =>
+                            normalizeStatus(operator.status) === 'active'
+                    ).length} active accounts
+                </p>
 
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">
-                                            Manage Operators
-                                        </h3>
-                                        <p className="text-sm text-gray-500">
-                                            Operator accounts
-                                        </p>
-                                    </div>
-                                </div>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('operators')}
+                    className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                    Manage Operators →
+                </button>
+            </div>
 
-                                <p className="mt-5 text-3xl font-bold text-gray-900">
-                                    {allOperators.length}
-                                </p>
+            {/* USERS */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">
+                            Total Users
+                        </p>
+                        <p className="mt-2 text-3xl font-bold text-gray-900">
+                            {allUsers.length}
+                        </p>
+                    </div>
+                    <span className="rounded-xl bg-blue-50 p-3 text-blue-600">
+                        <Users size={22} />
+                    </span>
+                </div>
 
-                                <p className="mt-1 text-sm text-gray-500">
-                                    {
-                                        allOperators.filter(
-                                            (operator) =>
-                                                normalizeStatus(
-                                                    operator.status
-                                                ) === 'active'
-                                        ).length
-                                    }{' '}
-                                    active accounts
-                                </p>
+                <p className="mt-3 text-xs text-gray-500">
+                    Registered travelers
+                </p>
 
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('operators')}
-                                    className="mt-5 text-sm font-semibold text-blue-600 hover:text-blue-700"
-                                >
-                                    Manage Operators →
-                                </button>
-                            </div>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('users')}
+                    className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                    Manage Users →
+                </button>
+            </div>
 
-                            {/* USERS CARD */}
+            {/* TRIPS */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">
+                            Total Trips
+                        </p>
+                        <p className="mt-2 text-3xl font-bold text-gray-900">
+                            {allTours.length}
+                        </p>
+                    </div>
+                    <span className="rounded-xl bg-green-50 p-3 text-green-600">
+                        <MapPinned size={22} />
+                    </span>
+                </div>
 
-                            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <span className="rounded-xl bg-blue-50 p-3 text-blue-600">
-                                        <Users size={22} />
-                                    </span>
+                <p className="mt-3 text-xs text-gray-500">
+                    {allTours.filter(
+                        (tour) => normalizeStatus(tour.status) === 'published'
+                    ).length} published trips
+                </p>
 
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">
-                                            User Accounts
-                                        </h3>
-                                        <p className="text-sm text-gray-500">
-                                            Registered travelers
-                                        </p>
-                                    </div>
-                                </div>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('tours')}
+                    className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                    Manage Trips →
+                </button>
+            </div>
 
-                                <p className="mt-5 text-3xl font-bold text-gray-900">
-                                    {allUsers.length}
-                                </p>
+            {/* CATEGORIES */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">
+                            Categories
+                        </p>
+                        <p className="mt-2 text-3xl font-bold text-gray-900">
+                            {categories.length}
+                        </p>
+                    </div>
+                    <span className="rounded-xl bg-purple-50 p-3 text-purple-600">
+                        <FolderTree size={22} />
+                    </span>
+                </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('users')}
-                                    className="mt-5 text-sm font-semibold text-blue-600 hover:text-blue-700"
-                                >
-                                    Manage Users →
-                                </button>
-                            </div>
+                <p className="mt-3 text-xs text-gray-500">
+                    Available activity categories
+                </p>
 
-                            {/* TRIPS CARD */}
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('categories')}
+                    className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                    Manage Categories →
+                </button>
+            </div>
 
-                            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <span className="rounded-xl bg-green-50 p-3 text-green-600">
-                                        <MapPinned size={22} />
-                                    </span>
+            {/* DESTINATIONS */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">
+                            Destinations
+                        </p>
+                        <p className="mt-2 text-3xl font-bold text-gray-900">
+                            {destinations.length}
+                        </p>
+                    </div>
+                    <span className="rounded-xl bg-orange-50 p-3 text-orange-600">
+                        <MapPin size={22} />
+                    </span>
+                </div>
 
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">
-                                            Trips & Activities
-                                        </h3>
-                                        <p className="text-sm text-gray-500">
-                                            Marketplace listings
-                                        </p>
-                                    </div>
-                                </div>
+                <p className="mt-3 text-xs text-gray-500">
+                    Travel destinations available
+                </p>
 
-                                <p className="mt-5 text-3xl font-bold text-gray-900">
-                                    {allTours.length}
-                                </p>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('destinations')}
+                    className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                    Manage Destinations →
+                </button>
+            </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('tours')}
-                                    className="mt-5 text-sm font-semibold text-blue-600 hover:text-blue-700"
-                                >
-                                    Manage Trips →
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-                )}
+            {/* BOOKINGS */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">
+                            Total Bookings
+                        </p>
+                        <p className="mt-2 text-3xl font-bold text-gray-900">
+                            {allBookings.length}
+                        </p>
+                    </div>
+                    <span className="rounded-xl bg-cyan-50 p-3 text-cyan-600">
+                        <CalendarDays size={22} />
+                    </span>
+                </div>
+
+                <p className="mt-3 text-xs text-gray-500">
+                    {allBookings.filter(
+                        (booking) =>
+                            normalizeStatus(booking.status) === 'confirmed'
+                    ).length} confirmed bookings
+                </p>
+
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('bookings')}
+                    className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                    Manage Bookings →
+                </button>
+            </div>
+
+            {/* REVIEWS */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500">
+                            Total Reviews
+                        </p>
+                        <p className="mt-2 text-3xl font-bold text-gray-900">
+                            {allReviews.length}
+                        </p>
+                    </div>
+                    <span className="rounded-xl bg-amber-50 p-3 text-amber-600">
+                        <Star size={22} />
+                    </span>
+                </div>
+
+                <p className="mt-3 text-xs text-gray-500">
+                    {allReviews.filter(
+                        (review) =>
+                            normalizeStatus(review.status) === 'pending'
+                    ).length} reviews awaiting moderation
+                </p>
+
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('reviews')}
+                    className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                    Manage Reviews →
+                </button>
+            </div>
+
+        </div>
+    </section>
+)}
+
 
                 {/* ====================================== */}
                 {/* MANAGE OPERATORS */}
@@ -1709,9 +2248,7 @@ export default function AdminDashboardPage() {
                                                             className="shrink-0 text-blue-600"
                                                         />
                                                         <span className="line-clamp-1">
-                                                            {destinationName(
-                                                                tour
-                                                            )}
+                                                            {destinationName}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -1893,7 +2430,7 @@ export default function AdminDashboardPage() {
                                                     size={16}
                                                     className="text-blue-600"
                                                 />
-                                                {destinationName(selectedTour)}
+                                                {destinationName}{' '}
                                             </p>
                                         </div>
 
@@ -1918,9 +2455,7 @@ export default function AdminDashboardPage() {
                                                         Destination
                                                     </p>
                                                     <p className="mt-1 text-sm font-medium text-gray-800">
-                                                        {destinationName(
-                                                            selectedTour
-                                                        )}
+                                                        {destinationName}
                                                     </p>
                                                 </div>
 
@@ -2273,6 +2808,925 @@ export default function AdminDashboardPage() {
                 )}
 
                 {/* ====================================== */}
+                {/* MANAGE CATEGORIES */}
+                {/* ====================================== */}
+
+                {activeTab === 'categories' && (
+                    <section className="space-y-6">
+                        {/* CATEGORY FORM */}
+                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                            <div className="border-b border-gray-200 bg-gray-50 px-6 py-5">
+                                <h2 className="text-lg font-bold text-gray-900">
+                                    {editingCategoryId
+                                        ? 'Edit Category'
+                                        : 'Create Category'}
+                                </h2>
+                                <p className="mt-1 text-sm text-gray-600">
+                                    Manage activity categories available in
+                                    Tripora.
+                                </p>
+                            </div>
+
+                            <form
+                                onSubmit={handleCategorySubmit}
+                                className="space-y-5 p-6"
+                            >
+                                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                    {/* CATEGORY NAME */}
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-gray-900">
+                                            Category Name{' '}
+                                            <span className="text-red-600">
+                                                *
+                                            </span>
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={categoryName}
+                                            onChange={(event) =>
+                                                setCategoryName(
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="Example: Adventure"
+                                            required
+                                            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 placeholder:text-gray-600 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                                        />
+                                    </div>
+
+                                    {/* CATEGORY IMAGE */}
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-gray-900">
+                                            Category Image
+                                        </label>
+
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(event) =>
+                                                setCategoryImage(
+                                                    event.target.files?.[0] ||
+                                                        null
+                                                )
+                                            }
+                                            className="w-full cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-800 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                                        />
+
+                                        <p className="mt-2 text-xs text-gray-600">
+                                            Optional. Choose an image for this
+                                            category.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* DESCRIPTION */}
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-gray-900">
+                                        Description
+                                    </label>
+
+                                    <textarea
+                                        value={categoryDescription}
+                                        onChange={(event) =>
+                                            setCategoryDescription(
+                                                event.target.value
+                                            )
+                                        }
+                                        rows={4}
+                                        placeholder="Describe this category..."
+                                        className="w-full resize-y rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 placeholder:text-gray-600 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                                    />
+                                </div>
+
+                                {/* FORM BUTTONS */}
+                                <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 pt-5">
+                                    <button
+                                        type="submit"
+                                        disabled={actionLoading}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        {actionLoading ? (
+                                            <Loader2
+                                                size={17}
+                                                className="animate-spin"
+                                            />
+                                        ) : (
+                                            <Plus size={17} />
+                                        )}
+
+                                        {editingCategoryId
+                                            ? 'Update Category'
+                                            : 'Create Category'}
+                                    </button>
+
+                                    {editingCategoryId && (
+                                        <button
+                                            type="button"
+                                            onClick={resetCategoryForm}
+                                            className="rounded-xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-800 transition hover:bg-gray-100"
+                                        >
+                                            Cancel Edit
+                                        </button>
+                                    )}
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* CATEGORY LIST */}
+                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                            {/* TABLE HEADER */}
+                            <div className="flex flex-col gap-4 border-b border-gray-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <h2 className="text-lg font-bold text-gray-900">
+                                        All Categories
+                                    </h2>
+                                    <p className="mt-1 text-sm text-gray-600">
+                                        Manage, edit and update your activity
+                                        categories.
+                                    </p>
+                                    <p className="mt-2 text-sm font-semibold text-gray-800">
+                                        {categories.length} categories available
+                                    </p>
+                                </div>
+
+                                <div className="w-full sm:w-72">
+                                    <SearchBox
+                                        value={categorySearch}
+                                        onChange={setCategorySearch}
+                                        placeholder="Search categories..."
+                                    />
+                                </div>
+                            </div>
+
+                            {/* TABLE */}
+                            <div className="overflow-x-auto">
+                                <table className="w-full min-w-[750px] text-left text-sm">
+                                    <thead className="bg-gray-50 text-xs font-bold uppercase tracking-wider text-gray-700">
+                                        <tr>
+                                            <th className="px-6 py-4">
+                                                Category
+                                            </th>
+                                            <th className="px-6 py-4">Slug</th>
+                                            <th className="px-6 py-4">
+                                                Status
+                                            </th>
+                                            <th className="px-6 py-4 text-right">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody className="divide-y divide-gray-100">
+                                        {loadingCategories &&
+                                        categories.length === 0 ? (
+                                            <EmptyTable
+                                                message="Loading categories..."
+                                                colSpan={4}
+                                            />
+                                        ) : filteredCategories.length === 0 ? (
+                                            <EmptyTable
+                                                message="No categories found."
+                                                colSpan={4}
+                                            />
+                                        ) : (
+                                            filteredCategories.map(
+                                                (category) => {
+                                                    const imageUrl =
+                                                        typeof category.image ===
+                                                        'string'
+                                                            ? category.image
+                                                            : category.image
+                                                                  ?.url;
+
+                                                    return (
+                                                        <tr
+                                                            key={category._id}
+                                                            className="transition hover:bg-blue-50/40"
+                                                        >
+                                                            {/* CATEGORY */}
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    {imageUrl ? (
+                                                                        <img
+                                                                            src={
+                                                                                imageUrl
+                                                                            }
+                                                                            alt={
+                                                                                category.name
+                                                                            }
+                                                                            className="h-12 w-12 rounded-xl border border-gray-200 object-cover"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
+                                                                            <FolderTree
+                                                                                size={
+                                                                                    21
+                                                                                }
+                                                                            />
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div className="min-w-0">
+                                                                        <p className="font-semibold text-gray-900">
+                                                                            {
+                                                                                category.name
+                                                                            }
+                                                                        </p>
+
+                                                                        <p className="mt-1 max-w-xs truncate text-xs text-gray-600">
+                                                                            {category.description ||
+                                                                                'No description added'}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+
+                                                            {/* SLUG */}
+                                                            <td className="px-6 py-4">
+                                                                <span className="rounded-md bg-gray-100 px-2.5 py-1 font-medium text-gray-800">
+                                                                    {
+                                                                        category.slug
+                                                                    }
+                                                                </span>
+                                                            </td>
+
+                                                            {/* STATUS */}
+                                                            <td className="px-6 py-4">
+                                                                <StatusBadge
+                                                                    status={
+                                                                        category.isActive
+                                                                            ? 'active'
+                                                                            : 'inactive'
+                                                                    }
+                                                                />
+                                                            </td>
+
+                                                            {/* ACTIONS */}
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex justify-end gap-2">
+                                                                    {/* EDIT */}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            handleEditCategory(
+                                                                                category
+                                                                            )
+                                                                        }
+                                                                        title="Edit category"
+                                                                        className="rounded-lg border border-blue-200 bg-blue-50 p-2.5 text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
+                                                                    >
+                                                                        <Pencil
+                                                                            size={
+                                                                                16
+                                                                            }
+                                                                        />
+                                                                    </button>
+
+                                                                    {/* ACTIVATE / DEACTIVATE */}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            handleCategoryStatus(
+                                                                                category._id,
+                                                                                category.isActive
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            actionLoading
+                                                                        }
+                                                                        title={
+                                                                            category.isActive
+                                                                                ? 'Deactivate category'
+                                                                                : 'Activate category'
+                                                                        }
+                                                                        className={`rounded-lg border px-3 py-2.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                                                            category.isActive
+                                                                                ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
+                                                                                : 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'
+                                                                        }`}
+                                                                    >
+                                                                        {category.isActive
+                                                                            ? 'Deactivate'
+                                                                            : 'Activate'}
+                                                                    </button>
+
+                                                                    {/* DELETE */}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            handleDeleteCategory(
+                                                                                category._id
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            actionLoading
+                                                                        }
+                                                                        title="Delete category"
+                                                                        className="rounded-lg border border-red-200 bg-white p-2.5 text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                    >
+                                                                        <Trash2
+                                                                            size={
+                                                                                16
+                                                                            }
+                                                                        />
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                }
+                                            )
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* TABLE FOOTER */}
+                            <div className="flex flex-col gap-2 border-t border-gray-200 bg-gray-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <p className="text-xs font-medium text-gray-700">
+                                    Showing {filteredCategories.length} of{' '}
+                                    {categories.length} categories
+                                </p>
+                                <p className="text-xs text-gray-600">
+                                    Category management
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* ====================================== */}
+                {/* MANAGE DESTINATIONS */}
+                {/* ====================================== */}
+
+                {activeTab === 'destinations' && (
+                    <section className="space-y-6">
+                        {/* DESTINATION FORM */}
+
+                        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                            <div className="mb-5">
+                                <h2 className="text-lg font-bold text-gray-900">
+                                    {editingDestinationId
+                                        ? 'Edit Destination'
+                                        : 'Create Destination'}
+                                </h2>
+
+                                <p className="mt-1 text-sm text-gray-600">
+                                    Add and manage travel destinations on
+                                    Tripora.
+                                </p>
+                            </div>
+
+                            <form
+                                onSubmit={handleDestinationSubmit}
+                                className="space-y-4"
+                            >
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    {/* DESTINATION NAME */}
+
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-gray-900">
+                                            Destination Name *
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={destinationName}
+                                            onChange={(event) =>
+                                                setDestinationName(
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="Example: Bali"
+                                            required
+                                            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                                        />
+                                    </div>
+
+                                    {/* COUNTRY */}
+
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-gray-900">
+                                            Country *
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={destinationCountry}
+                                            onChange={(event) =>
+                                                setDestinationCountry(
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="Example: Indonesia"
+                                            required
+                                            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                                        />
+                                    </div>
+
+                                    {/* REGION */}
+
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-gray-900">
+                                            Region
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={destinationRegion}
+                                            onChange={(event) =>
+                                                setDestinationRegion(
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="Example: Southeast Asia"
+                                            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                                        />
+                                    </div>
+                                    {/* BEST TIME TO VISIT */}
+
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-gray-900">
+                                            Best Time to Visit
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={destinationBestTimeToVisit}
+                                            onChange={(event) =>
+                                                setDestinationBestTimeToVisit(
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="Example: April to October"
+                                            maxLength={200}
+                                            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                                        />
+                                    </div>
+
+                                    {/* DESTINATION IMAGE */}
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-gray-900">
+                                            Destination Image{' '}
+                                            {!editingDestinationId && '*'}
+                                        </label>
+
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(event) =>
+                                                setDestinationImage(
+                                                    event.target.files?.[0] ||
+                                                        null
+                                                )
+                                            }
+                                            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:font-medium file:text-blue-700"
+                                        />
+
+                                        {/* Existing image preview */}
+                                        {editingDestinationId &&
+                                            !destinationImage &&
+                                            (() => {
+                                                const destination =
+                                                    destinations.find(
+                                                        (item) =>
+                                                            item._id ===
+                                                            editingDestinationId
+                                                    );
+
+                                                const currentImage =
+                                                    typeof destination?.image ===
+                                                    'string'
+                                                        ? destination.image
+                                                        : destination?.image
+                                                              ?.url;
+
+                                                return currentImage ? (
+                                                    <div className="mt-3">
+                                                        <p className="mb-2 text-xs font-medium text-gray-600">
+                                                            Current destination
+                                                            image
+                                                        </p>
+
+                                                        <img
+                                                            src={currentImage}
+                                                            alt={`${destination?.name || 'Destination'} image`}
+                                                            className="h-24 w-32 rounded-xl border border-gray-200 object-cover"
+                                                        />
+                                                    </div>
+                                                ) : null;
+                                            })()}
+                                    </div>
+                                </div>
+
+                                {/* DESCRIPTION */}
+
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-gray-900">
+                                        Description *
+                                    </label>
+
+                                    <textarea
+                                        value={destinationDescription}
+                                        onChange={(event) =>
+                                            setDestinationDescription(
+                                                event.target.value
+                                            )
+                                        }
+                                        rows={3}
+                                        required
+                                        placeholder="Describe the destination..."
+                                        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                                    />
+                                </div>
+
+                                {/* HIGHLIGHTS */}
+
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-gray-900">
+                                        Highlights
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        value={destinationHighlights}
+                                        onChange={(event) =>
+                                            setDestinationHighlights(
+                                                event.target.value
+                                            )
+                                        }
+                                        placeholder="Beaches, Temples, Waterfalls"
+                                        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                                    />
+
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Separate highlights with commas.
+                                    </p>
+                                </div>
+
+                                {/* COORDINATES */}
+
+                                <div>
+                                    <h3 className="mb-3 text-sm font-semibold text-gray-900">
+                                        Coordinates *
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label className="mb-2 block text-sm font-medium text-gray-800">
+                                                Latitude *
+                                            </label>
+
+                                            <input
+                                                type="number"
+                                                step="any"
+                                                value={destinationLatitude}
+                                                onChange={(event) =>
+                                                    setDestinationLatitude(
+                                                        event.target.value
+                                                    )
+                                                }
+                                                placeholder="-8.4095"
+                                                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-2 block text-sm font-medium text-gray-800">
+                                                Longitude *
+                                            </label>
+
+                                            <input
+                                                type="number"
+                                                step="any"
+                                                value={destinationLongitude}
+                                                onChange={(event) =>
+                                                    setDestinationLongitude(
+                                                        event.target.value
+                                                    )
+                                                }
+                                                placeholder="115.1889"
+                                                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* FORM BUTTONS */}
+
+                                <div className="flex flex-wrap gap-3">
+                                    <button
+                                        type="submit"
+                                        disabled={actionLoading}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        {actionLoading ? (
+                                            <Loader2
+                                                size={16}
+                                                className="animate-spin"
+                                            />
+                                        ) : (
+                                            <Plus size={16} />
+                                        )}
+
+                                        {editingDestinationId
+                                            ? 'Update Destination'
+                                            : 'Create Destination'}
+                                    </button>
+
+                                    {editingDestinationId && (
+                                        <button
+                                            type="button"
+                                            onClick={resetDestinationForm}
+                                            className="rounded-xl border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-100"
+                                        >
+                                            Cancel Edit
+                                        </button>
+                                    )}
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* DESTINATION LIST */}
+
+                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                            <div className="flex flex-col gap-4 border-b border-gray-200 p-5 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <h2 className="text-lg font-bold text-gray-900">
+                                        All Destinations
+                                    </h2>
+
+                                    <p className="mt-1 text-sm text-gray-600">
+                                        {destinations.length} destinations
+                                        available.
+                                    </p>
+                                </div>
+
+                                <SearchBox
+                                    value={destinationSearch}
+                                    onChange={setDestinationSearch}
+                                    placeholder="Search destination or country..."
+                                />
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full min-w-[900px] text-left text-sm">
+                                    <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-600">
+                                        <tr>
+                                            <th className="px-5 py-4">
+                                                Destination
+                                            </th>
+                                            <th className="px-5 py-4">
+                                                Country
+                                            </th>
+                                            <th className="px-5 py-4">
+                                                Region
+                                            </th>
+                                            <th className="px-5 py-4">
+                                                Status
+                                            </th>
+                                            <th className="px-5 py-4 text-right">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody className="divide-y divide-gray-100">
+                                        {loadingDestinations &&
+                                        destinations.length === 0 ? (
+                                            <EmptyTable
+                                                message="Loading destinations..."
+                                                colSpan={5}
+                                            />
+                                        ) : filteredDestinations.length ===
+                                          0 ? (
+                                            <EmptyTable
+                                                message="No destinations found."
+                                                colSpan={5}
+                                            />
+                                        ) : (
+                                            filteredDestinations.map(
+                                                (destination) => {
+                                                    const imageUrl =
+                                                        typeof destination.image ===
+                                                        'string'
+                                                            ? destination.image
+                                                            : destination.image
+                                                                  ?.url;
+
+                                                    return (
+                                                        <tr
+                                                            key={
+                                                                destination._id
+                                                            }
+                                                            className="transition hover:bg-gray-50"
+                                                        >
+                                                            <td className="px-5 py-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    {imageUrl ? (
+                                                                        <img
+                                                                            src={
+                                                                                imageUrl
+                                                                            }
+                                                                            alt={
+                                                                                destination.name
+                                                                            }
+                                                                            className="h-12 w-14 rounded-xl object-cover"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="flex h-12 w-14 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                                                                            <MapPin
+                                                                                size={
+                                                                                    20
+                                                                                }
+                                                                            />
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div>
+                                                                        <p className="font-semibold text-gray-900">
+                                                                            {
+                                                                                destination.name
+                                                                            }
+                                                                        </p>
+
+                                                                        <p className="mt-1 text-xs text-gray-600">
+                                                                            {
+                                                                                destination.slug
+                                                                            }
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+
+                                                            <td className="px-5 py-4 text-gray-800">
+                                                                {destination.country ||
+                                                                    '—'}
+                                                            </td>
+
+                                                            <td className="px-5 py-4 text-gray-800">
+                                                                {destination.region ||
+                                                                    '—'}
+                                                            </td>
+
+                                                            <td className="px-5 py-4">
+                                                                <StatusBadge
+                                                                    status={
+                                                                        destination.status
+                                                                    }
+                                                                />
+                                                            </td>
+
+                                                            <td className="px-5 py-4">
+                                                                <div className="flex justify-end gap-2">
+                                                                    {/* EDIT */}
+
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            handleEditDestination(
+                                                                                destination
+                                                                            )
+                                                                        }
+                                                                        title="Edit destination"
+                                                                        className="rounded-lg border border-gray-200 p-2 text-blue-600 transition hover:bg-blue-50"
+                                                                    >
+                                                                        <Pencil
+                                                                            size={
+                                                                                16
+                                                                            }
+                                                                        />
+                                                                    </button>
+
+                                                                    {/* DELETE - OPEN MODAL */}
+
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            setPendingDestinationDelete(
+                                                                                destination._id
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            actionLoading
+                                                                        }
+                                                                        title="Delete destination"
+                                                                        className="rounded-lg border border-red-200 p-2 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                                                                    >
+                                                                        <Trash2
+                                                                            size={
+                                                                                16
+                                                                            }
+                                                                        />
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                }
+                                            )
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="border-t border-gray-200 px-5 py-4 text-xs text-gray-600">
+                                Showing {filteredDestinations.length} of{' '}
+                                {destinations.length} destinations
+                            </div>
+                        </div>
+
+                        {/* DELETE CONFIRMATION MODAL */}
+
+                        {pendingDestinationDelete && (
+                            <div
+                                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+                                onClick={() => {
+                                    if (!actionLoading) {
+                                        setPendingDestinationDelete(null);
+                                    }
+                                }}
+                            >
+                                <div
+                                    role="dialog"
+                                    aria-modal="true"
+                                    aria-labelledby="delete-destination-title"
+                                    className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+                                    onClick={(event) => event.stopPropagation()}
+                                >
+                                    {/* MODAL ICON */}
+
+                                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+                                        <Trash2
+                                            size={26}
+                                            className="text-red-600"
+                                        />
+                                    </div>
+
+                                    {/* MODAL CONTENT */}
+
+                                    <div className="text-center">
+                                        <h3
+                                            id="delete-destination-title"
+                                            className="text-lg font-bold text-gray-900"
+                                        >
+                                            Delete Destination?
+                                        </h3>
+
+                                        <p className="mt-2 text-sm leading-6 text-gray-600">
+                                            Are you sure you want to delete this
+                                            destination? This action cannot be
+                                            undone.
+                                        </p>
+                                    </div>
+
+                                    {/* MODAL BUTTONS */}
+
+                                    <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+                                        <button
+                                            type="button"
+                                            disabled={actionLoading}
+                                            onClick={() =>
+                                                setPendingDestinationDelete(
+                                                    null
+                                                )
+                                            }
+                                            className="rounded-xl border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
+                                        >
+                                            Cancel
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            disabled={actionLoading}
+                                            onClick={() => {
+                                                if (pendingDestinationDelete) {
+                                                    handleDeleteDestination(
+                                                        pendingDestinationDelete
+                                                    );
+                                                }
+                                            }}
+                                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            {actionLoading ? (
+                                                <Loader2
+                                                    size={16}
+                                                    className="animate-spin"
+                                                />
+                                            ) : (
+                                                <Trash2 size={16} />
+                                            )}
+                                            Delete Destination
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                {/* ====================================== */}
                 {/* MANAGE BOOKINGS */}
                 {/* ====================================== */}
 
@@ -2563,6 +4017,18 @@ export default function AdminDashboardPage() {
                     />
                 )}
             </div>
+            {confirmationDialog && (
+                <ConfirmationModal
+                    dialog={confirmationDialog}
+                    loading={confirmLoading}
+                    onClose={() => {
+                        if (!confirmLoading) {
+                            setConfirmationDialog(null);
+                        }
+                    }}
+                    onConfirm={handleConfirmAction}
+                />
+            )}
         </main>
     );
 }

@@ -10,7 +10,6 @@ import type { AuthUser } from "./authSlice";
 
 // ==================================================
 // DASHBOARD STATISTICS TYPES
-// Matches GET /api/admin/dashboard response
 // ==================================================
 
 export interface AdminStats {
@@ -155,6 +154,127 @@ interface FetchReviewsResponse {
 }
 
 // ==================================================
+// CATEGORY TYPES
+// ==================================================
+
+export interface AdminCategory {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string | {
+    url: string;
+    publicId?: string;
+  };
+  isActive: boolean;
+  isDeleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CategoryPayload {
+  name: string;
+  description?: string;
+  image?: File | string;
+  [key: string]: unknown;
+}
+
+export interface UpdateCategoryPayload {
+  categoryId: string;
+  name?: string;
+  description?: string;
+  image?: File | string;
+  [key: string]: unknown;
+}
+
+export interface CategoryStatusPayload {
+  categoryId: string;
+  isActive: boolean;
+}
+
+export interface DeleteCategoryPayload {
+  categoryId: string;
+}
+
+// ==================================================
+// DESTINATION TYPES
+// ==================================================
+
+export interface AdminDestination {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  country?: string;
+  region?: string;
+  city?: string;
+  image?: string | {
+    url: string;
+    publicId?: string;
+  };
+  coordinates?: {
+    latitude?: number;
+    longitude?: number;
+    lat?: number;
+    lng?: number;
+  };
+  highlights?: string[];
+  status: "active" | "inactive";
+  isDeleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DestinationPayload {
+  name: string;
+  description?: string;
+  country?: string;
+  region?: string;
+  city?: string;
+  image?: File | string;
+  coordinates?: {
+    latitude?: number;
+    longitude?: number;
+    lat?: number;
+    lng?: number;
+  };
+  highlights?: string[];
+  [key: string]: unknown;
+}
+
+export interface UpdateDestinationPayload {
+  destinationId: string;
+  name?: string;
+  slug?: string;
+  description?: string;
+  country?: string;
+  region?: string;
+  city?: string;
+  image?: File | string;
+  coordinates?: {
+    latitude?: number;
+    longitude?: number;
+    lat?: number;
+    lng?: number;
+  };
+  highlights?: string[];
+  [key: string]: unknown;
+}
+
+export interface DestinationFetchParams {
+  search?: string;
+  country?: string;
+  region?: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+}
+
+export interface DeleteDestinationPayload {
+  destinationId: string;
+}
+
+// ==================================================
 // ADMIN STATE
 // ==================================================
 
@@ -174,6 +294,12 @@ interface AdminState {
   reviewStats: ReviewStats;
   reviewPagination: ReviewPagination;
 
+  // Categories
+  categories: AdminCategory[];
+
+  // Destinations
+  destinations: AdminDestination[];
+
   // Loading
   loadingStats: boolean;
   loadingUsers: boolean;
@@ -182,6 +308,8 @@ interface AdminState {
   loadingBookings: boolean;
   loadingReports: boolean;
   loadingReviews: boolean;
+  loadingCategories: boolean;
+  loadingDestinations: boolean;
 
   actionLoading: boolean;
 
@@ -221,6 +349,9 @@ const initialState: AdminState = {
     totalPages: 0,
   },
 
+  categories: [],
+  destinations: [],
+
   loadingStats: false,
   loadingUsers: false,
   loadingOperators: false,
@@ -228,6 +359,8 @@ const initialState: AdminState = {
   loadingBookings: false,
   loadingReports: false,
   loadingReviews: false,
+  loadingCategories: false,
+  loadingDestinations: false,
 
   actionLoading: false,
 
@@ -306,6 +439,56 @@ function getRecordId(
   return typeof id === "string" ? id : undefined;
 }
 
+/**
+ * Converts an object into FormData.
+ *
+ * - File values are appended directly.
+ * - Strings and numbers are appended as strings.
+ * - Arrays and objects are JSON-stringified.
+ * - Undefined and null values are skipped.
+ *
+ * The image field must be named "image" because
+ * the Express routes use upload.single("image").
+ */
+function createFormData(
+    data: Record<string, unknown>
+): FormData {
+    const formData = new FormData();
+
+    Object.entries(data).forEach(([key, value]) => {
+        if (value === undefined || value === null) {
+            console.log(`SKIPPED: ${key}`);
+            return;
+        }
+
+        if (value instanceof File) {
+            console.log(`FILE: ${key}`, {
+                name: value.name,
+                type: value.type,
+                size: value.size,
+            });
+
+            formData.append(key, value);
+            return;
+        }
+
+        if (
+            typeof value === "string" ||
+            typeof value === "number" ||
+            typeof value === "boolean"
+        ) {
+            console.log(`FIELD: ${key}`, value);
+            formData.append(key, String(value));
+            return;
+        }
+
+        console.log(`OBJECT/ARRAY: ${key}`, value);
+
+        formData.append(key, JSON.stringify(value));
+    });
+
+    return formData;
+}
 // ==================================================
 // DASHBOARD STATISTICS
 // GET /api/admin/dashboard
@@ -320,20 +503,6 @@ export const fetchAdminStats = createAsyncThunk<
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.get("/admin/dashboard");
-
-      // Backend response:
-      // {
-      //   success: true,
-      //   message: "...",
-      //   data: {
-      //     users: {},
-      //     operators: {},
-      //     tours: {},
-      //     bookings: {},
-      //     payments: {},
-      //     financials: {}
-      //   }
-      // }
 
       return extractObject<AdminStats>(response.data);
     } catch (error) {
@@ -664,6 +833,242 @@ export const fetchAllReviews = createAsyncThunk<
 );
 
 // ==================================================
+// CATEGORIES
+// ==================================================
+
+// GET /api/categories
+
+export const fetchAllCategories = createAsyncThunk<
+    AdminCategory[],
+    void,
+    { rejectValue: string }
+>(
+    "admin/fetchAllCategories",
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await api.get("/admin/Categories");
+
+            return extractArray<AdminCategory>(response.data);
+        } catch (error) {
+            return rejectWithValue(getErrorMessage(error));
+        }
+    }
+);
+
+
+// POST /api/categories/create
+export const createCategory = createAsyncThunk<
+  AdminCategory,
+  CategoryPayload,
+  { rejectValue: string }
+>(
+  "admin/createCategory",
+  async (data, { rejectWithValue }) => {
+    try {
+      const formData = createFormData(
+        data as Record<string, unknown>
+      );
+
+      const response = await api.post(
+        "/categories/create",
+        formData
+      );
+
+      return extractObject<AdminCategory>(response.data);
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+// PATCH /api/categories/:id
+export const updateCategory = createAsyncThunk<
+  AdminCategory,
+  UpdateCategoryPayload,
+  { rejectValue: string }
+>(
+  "admin/updateCategory",
+  async (
+    { categoryId, ...data },
+    { rejectWithValue }
+  ) => {
+    try {
+      const formData = createFormData(
+        data as Record<string, unknown>
+      );
+
+      const response = await api.patch(
+        `/categories/${categoryId}`,
+        formData
+      );
+
+      return extractObject<AdminCategory>(response.data);
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+// PATCH /api/categories/:id/status
+export const updateCategoryStatus = createAsyncThunk<
+  AdminCategory,
+  CategoryStatusPayload,
+  { rejectValue: string }
+>(
+  "admin/updateCategoryStatus",
+  async (
+    { categoryId, isActive },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await api.patch(
+        `/categories/${categoryId}/status`,
+        { isActive }
+      );
+
+      return extractObject<AdminCategory>(response.data);
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+// DELETE /api/categories/:id
+export const deleteCategory = createAsyncThunk<
+  string,
+  DeleteCategoryPayload,
+  { rejectValue: string }
+>(
+  "admin/deleteCategory",
+  async ({ categoryId }, { rejectWithValue }) => {
+    try {
+      await api.delete(`/categories/${categoryId}`);
+
+      return categoryId;
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+// ==================================================
+// DESTINATIONS
+// ==================================================
+
+// GET /api/destinations
+export const fetchAllDestinations = createAsyncThunk<
+  AdminDestination[],
+  DestinationFetchParams | void,
+  { rejectValue: string }
+>(
+  "admin/fetchAllDestinations",
+  async (params, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/destinations", {
+        params: {
+          ...(params?.search && {
+            search: params.search,
+          }),
+
+          ...(params?.country && {
+            country: params.country,
+          }),
+
+          ...(params?.region && {
+            region: params.region,
+          }),
+
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 100,
+
+          ...(params?.sort && {
+            sort: params.sort,
+          }),
+        },
+      });
+
+      return extractArray<AdminDestination>(
+        response.data,
+        "destinations"
+      );
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+// POST /api/destinations/create
+export const createDestination = createAsyncThunk<
+  AdminDestination,
+  DestinationPayload,
+  { rejectValue: string }
+>(
+  "admin/createDestination",
+  async (data, { rejectWithValue }) => {
+    try {
+      const formData = createFormData(
+        data as Record<string, unknown>
+      );
+
+      const response = await api.post(
+        "/destinations/create",
+        formData
+      );
+
+      return extractObject<AdminDestination>(response.data);
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+// PATCH /api/destinations/:id
+export const updateDestination = createAsyncThunk<
+  AdminDestination,
+  UpdateDestinationPayload,
+  { rejectValue: string }
+>(
+  "admin/updateDestination",
+  async (
+    { destinationId, ...data },
+    { rejectWithValue }
+  ) => {
+    try {
+      const formData = createFormData(
+        data as Record<string, unknown>
+      );
+
+      const response = await api.patch(
+        `/destinations/${destinationId}`,
+        formData
+      );
+
+      return extractObject<AdminDestination>(response.data);
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+// DELETE /api/destinations/:id
+export const deleteDestination = createAsyncThunk<
+  string,
+  DeleteDestinationPayload,
+  { rejectValue: string }
+>(
+  "admin/deleteDestination",
+  async ({ destinationId }, { rejectWithValue }) => {
+    try {
+      await api.delete(`/destinations/${destinationId}`);
+
+      return destinationId;
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+// ==================================================
 // ADMIN SLICE
 // ==================================================
 
@@ -986,6 +1391,245 @@ const adminSlice = createSlice({
         state.loadingReviews = false;
         state.error =
           action.payload || "Failed to load reviews.";
+      })
+
+      // ============================================
+      // CATEGORIES - FETCH
+      // ============================================
+
+      .addCase(fetchAllCategories.pending, (state) => {
+        state.loadingCategories = true;
+        state.error = null;
+      })
+
+      .addCase(fetchAllCategories.fulfilled, (state, action) => {
+        state.loadingCategories = false;
+        state.categories = action.payload;
+      })
+
+      .addCase(fetchAllCategories.rejected, (state, action) => {
+        state.loadingCategories = false;
+        state.error =
+          action.payload || "Failed to load categories.";
+      })
+
+      // ============================================
+      // CATEGORIES - CREATE
+      // ============================================
+
+      .addCase(createCategory.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+        state.successMessage = null;
+      })
+
+      .addCase(createCategory.fulfilled, (state, action) => {
+        state.actionLoading = false;
+
+        state.categories.unshift(action.payload);
+
+        state.successMessage =
+          "Category created successfully.";
+      })
+
+      .addCase(createCategory.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error =
+          action.payload || "Failed to create category.";
+      })
+
+      // ============================================
+      // CATEGORIES - UPDATE
+      // ============================================
+
+      .addCase(updateCategory.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+        state.successMessage = null;
+      })
+
+      .addCase(updateCategory.fulfilled, (state, action) => {
+        state.actionLoading = false;
+
+        const updatedCategory = action.payload;
+
+        state.categories = state.categories.map((category) =>
+          category._id === updatedCategory._id
+            ? updatedCategory
+            : category
+        );
+
+        state.successMessage =
+          "Category updated successfully.";
+      })
+
+      .addCase(updateCategory.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error =
+          action.payload || "Failed to update category.";
+      })
+
+      // ============================================
+      // CATEGORIES - STATUS
+      // ============================================
+
+      .addCase(updateCategoryStatus.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+        state.successMessage = null;
+      })
+
+      .addCase(updateCategoryStatus.fulfilled, (state, action) => {
+        state.actionLoading = false;
+
+        const updatedCategory = action.payload;
+
+        state.categories = state.categories.map((category) =>
+          category._id === updatedCategory._id
+            ? updatedCategory
+            : category
+        );
+
+        state.successMessage =
+          "Category status updated successfully.";
+      })
+
+      .addCase(updateCategoryStatus.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error =
+          action.payload || "Failed to update category status.";
+      })
+
+      // ============================================
+      // CATEGORIES - DELETE
+      // ============================================
+
+      .addCase(deleteCategory.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+        state.successMessage = null;
+      })
+
+      .addCase(deleteCategory.fulfilled, (state, action) => {
+        state.actionLoading = false;
+
+        state.categories = state.categories.filter(
+          (category) => category._id !== action.payload
+        );
+
+        state.successMessage =
+          "Category deleted successfully.";
+      })
+
+      .addCase(deleteCategory.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error =
+          action.payload || "Failed to delete category.";
+      })
+
+      // ============================================
+      // DESTINATIONS - FETCH
+      // ============================================
+
+      .addCase(fetchAllDestinations.pending, (state) => {
+        state.loadingDestinations = true;
+        state.error = null;
+      })
+
+      .addCase(fetchAllDestinations.fulfilled, (state, action) => {
+        state.loadingDestinations = false;
+        state.destinations = action.payload;
+      })
+
+      .addCase(fetchAllDestinations.rejected, (state, action) => {
+        state.loadingDestinations = false;
+        state.error =
+          action.payload || "Failed to load destinations.";
+      })
+
+      // ============================================
+      // DESTINATIONS - CREATE
+      // ============================================
+
+      .addCase(createDestination.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+        state.successMessage = null;
+      })
+
+      .addCase(createDestination.fulfilled, (state, action) => {
+        state.actionLoading = false;
+
+        state.destinations.unshift(action.payload);
+
+        state.successMessage =
+          "Destination created successfully.";
+      })
+
+      .addCase(createDestination.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error =
+          action.payload || "Failed to create destination.";
+      })
+
+      // ============================================
+      // DESTINATIONS - UPDATE
+      // ============================================
+
+      .addCase(updateDestination.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+        state.successMessage = null;
+      })
+
+      .addCase(updateDestination.fulfilled, (state, action) => {
+        state.actionLoading = false;
+
+        const updatedDestination = action.payload;
+
+        state.destinations = state.destinations.map(
+          (destination) =>
+            destination._id === updatedDestination._id
+              ? updatedDestination
+              : destination
+        );
+
+        state.successMessage =
+          "Destination updated successfully.";
+      })
+
+      .addCase(updateDestination.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error =
+          action.payload || "Failed to update destination.";
+      })
+
+      // ============================================
+      // DESTINATIONS - DELETE
+      // ============================================
+
+      .addCase(deleteDestination.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+        state.successMessage = null;
+      })
+
+      .addCase(deleteDestination.fulfilled, (state, action) => {
+        state.actionLoading = false;
+
+        state.destinations = state.destinations.filter(
+          (destination) =>
+            destination._id !== action.payload
+        );
+
+        state.successMessage =
+          "Destination deleted successfully.";
+      })
+
+      .addCase(deleteDestination.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error =
+          action.payload || "Failed to delete destination.";
       });
   },
 });

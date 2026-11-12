@@ -341,26 +341,39 @@ export default function OperatorDashboardPage() {
     // RESTORE SELECTED TOUR ONLY
     // ========================================
 
-    // Do not restore the previously selected dashboard view.
-    // This ensures Overview always opens first.
+    // ========================================
+    // RESTORE DASHBOARD VIEW AND SELECTED TOUR
+    // ========================================
 
     useEffect(() => {
-        let isMounted = true;
-
         try {
+            // Restore the last selected dashboard view.
+            const savedView = localStorage.getItem(
+                'tripora_operator_active_view'
+            );
+
+            const validViews: OperatorView[] = [
+                'overview',
+                'tours',
+                'add-tour',
+                'edit-tour',
+                'orders',
+                'availability',
+                'reviews',
+            ];
+
+            if (savedView && validViews.includes(savedView as OperatorView)) {
+                setActiveView(savedView as OperatorView);
+            }
+
+            // Restore the selected tour.
             const savedTour = localStorage.getItem(
                 'tripora_operator_selected_tour'
             );
 
             if (savedTour) {
                 try {
-                    const parsedTour = JSON.parse(savedTour) as OperatorTour;
-
-                    Promise.resolve().then(() => {
-                        if (isMounted) {
-                            setSelectedTour(parsedTour);
-                        }
-                    });
+                    setSelectedTour(JSON.parse(savedTour) as OperatorTour);
                 } catch {
                     localStorage.removeItem('tripora_operator_selected_tour');
                 }
@@ -370,20 +383,23 @@ export default function OperatorDashboardPage() {
         } finally {
             setHasRestoredState(true);
         }
-
-        return () => {
-            isMounted = false;
-        };
     }, []);
-
     // ========================================
     // SAVE SELECTED TOUR
+    // ========================================
+
+    // ========================================
+    // SAVE DASHBOARD VIEW AND SELECTED TOUR
     // ========================================
 
     useEffect(() => {
         if (!hasRestoredState) return;
 
         try {
+            // Save the current dashboard view.
+            localStorage.setItem('tripora_operator_active_view', activeView);
+
+            // Save the selected tour.
             if (selectedTour) {
                 localStorage.setItem(
                     'tripora_operator_selected_tour',
@@ -395,7 +411,7 @@ export default function OperatorDashboardPage() {
         } catch (storageError) {
             console.error('Unable to save dashboard state:', storageError);
         }
-    }, [selectedTour, hasRestoredState]);
+    }, [activeView, selectedTour, hasRestoredState]);
 
     // ========================================
     // OPERATOR TOAST NOTIFICATIONS

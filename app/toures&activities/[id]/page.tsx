@@ -124,28 +124,37 @@ export default function TourDetailsPage() {
         }
     };
 
-    // Share
+    // Share tour
     const handleShare = async () => {
+        const shareUrl = window.location.href;
+        const shareData = {
+            title: currentTour?.title ?? 'Tripora Experience',
+            text: `Check out this amazing experience on Tripora: ${currentTour?.title ?? ''}`,
+            url: shareUrl,
+        };
+
         try {
-            if (navigator.share) {
-                await navigator.share({
-                    title: currentTour?.title ?? 'Tripora Experience',
-                    url: window.location.href,
-                });
+            if (navigator.share && navigator.canShare?.(shareData)) {
+                await navigator.share(shareData);
             } else {
-                await navigator.clipboard.writeText(window.location.href);
-                setShareMessage('Link copied!');
-                window.setTimeout(() => setShareMessage(''), 2500);
+                await navigator.clipboard.writeText(shareUrl);
+                setShareMessage('Link copied successfully!');
             }
         } catch (shareError) {
             if (
                 shareError instanceof Error &&
                 shareError.name !== 'AbortError'
             ) {
-                setShareMessage('Unable to share this link.');
-                window.setTimeout(() => setShareMessage(''), 2500);
+                try {
+                    await navigator.clipboard.writeText(shareUrl);
+                    setShareMessage('Link copied successfully!');
+                } catch {
+                    setShareMessage('Unable to share this link.');
+                }
             }
         }
+
+        window.setTimeout(() => setShareMessage(''), 2500);
     };
 
     // Navigate to booking page after successful validation

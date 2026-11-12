@@ -24,7 +24,12 @@ export default function DestinationsPage() {
     const dispatch = useDispatch<AppDispatch>();
 
     const { destinations, total, page, totalPages, loading, error } =
-        useSelector((state: RootState) => state.destinations);
+    useSelector((state: RootState) => state.destinations);
+
+// Get logged-in user
+const authUser = useSelector(
+    (state: RootState) => state.auth.user
+);
 
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState<
@@ -292,47 +297,27 @@ export default function DestinationsPage() {
                                         </p>
 
                                         {/* HIGHLIGHTS */}
-                                        {destination.highlights &&
-                                            destination.highlights.length >
-                                                0 && (
-                                                <div className="mt-4">
-                                                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-700">
-                                                        Highlights
-                                                    </p>
+{destination.highlights &&
+    destination.highlights.length > 0 && (
+        <div className="mt-4">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-700">
+                Highlights
+            </p>
 
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {destination.highlights
-                                                            .slice(0, 3)
-                                                            .map(
-                                                                (
-                                                                    highlight,
-                                                                    index
-                                                                ) => (
-                                                                    <span
-                                                                        key={`${highlight}-${index}`}
-                                                                        className="rounded-full bg-sky-50 px-3 py-1.5 text-[10px] font-medium text-sky-700"
-                                                                    >
-                                                                        {
-                                                                            highlight
-                                                                        }
-                                                                    </span>
-                                                                )
-                                                            )}
-
-                                                        {destination.highlights
-                                                            .length > 3 && (
-                                                            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-medium text-slate-500">
-                                                                +
-                                                                {destination
-                                                                    .highlights
-                                                                    .length -
-                                                                    3}{' '}
-                                                                more
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
+            <div className="flex flex-wrap gap-2">
+                {destination.highlights.map(
+                    (highlight, index) => (
+                        <span
+                            key={`${highlight}-${index}`}
+                            className="rounded-full bg-sky-50 px-3 py-1.5 text-[10px] font-medium text-sky-700"
+                        >
+                            {highlight}
+                        </span>
+                    )
+                )}
+            </div>
+        </div>
+    )}
 
                                         {/* BEST TIME */}
                                         {destination.bestTimeToVisit && (
@@ -356,19 +341,7 @@ export default function DestinationsPage() {
                                             </div>
                                         )}
 
-                                        {/* EXPLORE BUTTON */}
-                                        <Link
-                                            href={`/tours?destinationId=${encodeURIComponent(
-                                                destination._id
-                                            )}`}
-                                            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-sky-700"
-                                        >
-                                            Explore Tours
-                                            <ArrowRight
-                                                size={16}
-                                                className="transition-transform group-hover:translate-x-1"
-                                            />
-                                        </Link>
+                   
                                     </div>
                                 </article>
                             ))}
@@ -415,6 +388,18 @@ export default function DestinationsPage() {
                                 </button>
                             </div>
                         )}
+{/* EXPLORE ALL TOURS BUTTON */}
+{authUser?.role === 'user' && (
+    <div className="mt-12 flex justify-center">
+        <Link
+            href="/toures&activities"
+            className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-8 py-3.5 text-sm font-bold text-white shadow-md transition hover:bg-sky-700 hover:shadow-lg"
+        >
+            Explore Tours & Activities
+            <ArrowRight size={18} />
+        </Link>
+    </div>
+)}
                     </>
                 )}
 
