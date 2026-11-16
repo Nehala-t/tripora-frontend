@@ -131,9 +131,10 @@ export default function SignUpPage() {
     const errorClass = 'mt-1 text-xs text-red-600';
 
     return (
-        <main className="min-h-screen bg-white">
-            <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
-                <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-xl lg:grid-cols-2">
+    <main className="relative min-h-screen bg-white">
+        {/* Signup content below the absolute navbar */}
+        <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 pb-10 pt-28 sm:px-6 sm:pb-10 sm:pt-32 lg:px-8">
+            <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-xl lg:grid-cols-2">
                     {/* Left introduction panel */}
                     <section className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-10 text-white lg:flex">
                         <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/10" />
@@ -615,8 +616,8 @@ export default function SignUpPage() {
                             </Link>
                         </p>
                     </section>
-                </div>
-            </div>
-        </main>
-    );
+                        </div>
+        </div>
+    </main>
+);
 }

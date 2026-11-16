@@ -84,7 +84,8 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-blue-50/40 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+            <main className="relative min-h-screen bg-blue-50/40">
+        <div className="flex min-h-screen flex-col justify-center px-4 pb-12 pt-28 sm:px-6 sm:pb-12 sm:pt-32 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 {/* Tripora Logo */}
                 <Link
@@ -291,7 +292,9 @@ export default function LoginPage() {
                         </button>
                     </form>
                 </div>
-            </div>
+          </div>
         </div>
+    </main>
+
     );
 }
