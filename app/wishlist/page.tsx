@@ -8,6 +8,7 @@ import {
     fetchMyWishlist,
     removeFromWishlist,
 } from '../../redux/slices/wishlistSlice';
+import { toast } from 'react-toastify';
 import {
     FiHeart,
     FiTrash2,
@@ -28,9 +29,29 @@ export default function WishlistPage() {
         dispatch(fetchMyWishlist());
     }, [dispatch]);
 
-    const handleRemove = (tourId: string) => {
-        dispatch(removeFromWishlist(tourId));
-    };
+   const handleRemove = async (tourId: string) => {
+    try {
+        await dispatch(removeFromWishlist(tourId)).unwrap();
+
+        toast.success('Tour removed from your wishlist!');
+    } catch (error: unknown) {
+        console.error('Failed to remove tour from wishlist:', error);
+
+        const errorMessage =
+            typeof error === 'string'
+                ? error
+                : error instanceof Error
+                  ? error.message
+                  : typeof error === 'object' &&
+                      error !== null &&
+                      'message' in error &&
+                      typeof error.message === 'string'
+                    ? error.message
+                    : 'Unable to remove the tour. Please try again.';
+
+        toast.error(errorMessage);
+    }
+};
 
     if (loading && wishlistTours.length === 0) {
         return (

@@ -118,32 +118,7 @@ export default function LoginPage() {
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
                 <div className="bg-white py-8 px-6 shadow-xl shadow-blue-900/5 rounded-3xl border border-gray-100 sm:px-10">
-                    {/* Social Login Buttons */}
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                        <button
-                            type="button"
-                            onClick={() =>
-                                toast.info(
-                                    'Google login is not configured yet.'
-                                )
-                            }
-                            className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-2xl text-xs font-semibold text-[#0F172A] hover:bg-gray-50 transition-colors"
-                        >
-                            <FcGoogle size={18} /> Google
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() =>
-                                toast.info('Apple login is not configured yet.')
-                            }
-                            className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-2xl text-xs font-semibold text-[#0F172A] hover:bg-gray-50 transition-colors"
-                        >
-                            <FaApple size={18} className="text-[#0F172A]" />
-                            Apple
-                        </button>
-                    </div>
-
+                  
                     {/* Divider */}
                     <div className="relative mb-6">
                         <div className="absolute inset-0 flex items-center">
@@ -152,7 +127,7 @@ export default function LoginPage() {
 
                         <div className="relative flex justify-center text-xs uppercase">
                             <span className="bg-white px-3 text-gray-400 font-medium">
-                                Or log in with email
+                                log in with email
                             </span>
                         </div>
                     </div>
@@ -248,28 +223,6 @@ export default function LoginPage() {
                                         <FiEye size={17} />
                                     )}
                                 </button>
-                            </div>
-                        </div>
-
-                        {/* Remember Me */}
-                        <div className="flex items-center justify-between pt-1">
-                            <div className="flex items-center">
-                                <input
-                                    id="remember-me"
-                                    type="checkbox"
-                                    checked={rememberMe}
-                                    onChange={(e) =>
-                                        setRememberMe(e.target.checked)
-                                    }
-                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
-                                />
-
-                                <label
-                                    htmlFor="remember-me"
-                                    className="ml-2 text-xs font-medium text-gray-600"
-                                >
-                                    Remember me for 30 days
-                                </label>
                             </div>
                         </div>
 

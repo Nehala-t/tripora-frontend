@@ -5,7 +5,6 @@ import {
   FiX,
   FiMail,
   FiPhoneCall,
-  FiMessageSquare,
   FiChevronDown,
   FiHelpCircle,
 } from "react-icons/fi";
@@ -88,48 +87,55 @@ export default function HelpSupportModal({
         {/* MODAL BODY */}
         <div className="max-h-[70vh] overflow-y-auto p-6 sm:p-8 space-y-6">
           {/* CONTACT CHANNELS */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {/* Live Chat */}
-            <button
-              type="button"
-              onClick={() => alert("Connecting to chat support...")}
-              className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-center transition hover:border-indigo-300 hover:bg-indigo-50/30 hover:shadow-sm"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-                <FiMessageSquare size={18} />
-              </div>
-              <span className="text-xs font-bold text-slate-900">Live Chat</span>
-              <span className="text-[10px] font-medium text-slate-500">2 min response</span>
-            </button>
+<div className="grid grid-cols-2 gap-4">
 
-            {/* Email */}
-            <a
-              href="mailto:support@tripora.com"
-              className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-center transition hover:border-indigo-300 hover:bg-indigo-50/30 hover:shadow-sm"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                <FiMail size={18} />
-              </div>
-              <span className="text-xs font-bold text-slate-900">Email Us</span>
-              <span className="text-[10px] font-medium text-slate-500 truncate max-w-[100px]">
-                support@tripora.com
-              </span>
-            </a>
+  {/* EMAIL */}
+  <a
+    href="https://mail.google.com/mail/?view=cm&fs=1&to=support@tripora.com"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="group flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:border-indigo-300 hover:bg-indigo-50/50 hover:shadow-lg"
+  >
+    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 transition group-hover:bg-indigo-600 group-hover:text-white">
+      <FiMail size={21} />
+    </div>
 
-            {/* Call Support */}
-            <a
-              href="tel:+18005550199"
-              className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-center transition hover:border-indigo-300 hover:bg-indigo-50/30 hover:shadow-sm"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                <FiPhoneCall size={18} />
-              </div>
-              <span className="text-xs font-bold text-slate-900">Call Support</span>
-              <span className="text-[10px] font-medium text-slate-500">
-                +1 800 555-0199
-              </span>
-            </a>
-          </div>
+    <h3 className="text-sm font-bold text-slate-900">
+      Email Us
+    </h3>
+
+    <p className="mt-1 break-all text-[11px] font-medium text-slate-500">
+      support@tripora.com
+    </p>
+
+    <span className="mt-3 text-xs font-semibold text-indigo-600">
+      Send an email →
+    </span>
+  </a>
+
+  {/* PHONE */}
+  <a
+    href="tel:+18005550199"
+    className="group flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50/50 hover:shadow-lg"
+  >
+    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 transition group-hover:bg-emerald-600 group-hover:text-white">
+      <FiPhoneCall size={21} />
+    </div>
+
+    <h3 className="text-sm font-bold text-slate-900">
+      Call Support
+    </h3>
+
+    <p className="mt-1 text-xs font-medium text-slate-500">
+      +1 800 555-0199
+    </p>
+
+    <span className="mt-3 text-xs font-semibold text-emerald-600">
+      Call us →
+    </span>
+  </a>
+
+</div>
 
           {/* FAQS */}
           <div>

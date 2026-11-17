@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../../redux/store';
 import img from '../../public/images/hero/trip-hero.png';
+import { toast } from "react-toastify";
 
 import { fetchAllTours, type Tour } from '../../redux/slices/tourSlice';
 
@@ -170,11 +171,20 @@ export default function ToursAndActivitiesPage() {
         try {
             if (isWishlisted) {
                 await dispatch(removeFromWishlist(tourId)).unwrap();
+                 toast.success("Tour removed from your wishlist!");
             } else {
                 await dispatch(addToWishlist(tourId)).unwrap();
+                toast.success("Tour added to your wishlist!");
             }
         } catch (error) {
-            console.error('Wishlist update failed:', error);
+            const errorMessage =
+            typeof error === "string"
+                ? error
+                : error instanceof Error
+                  ? error.message
+                  : "Unable to update your wishlist. Please try again.";
+
+        toast.error(errorMessage);
         }
     };
 

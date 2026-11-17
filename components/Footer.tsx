@@ -81,36 +81,6 @@ export default function Footer() {
             <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
               TripOra makes travel effortless. Discover breathtaking destinations, book flights, luxury hotels, and curated holiday packages at unbeatable prices.
             </p>
-
-            {/* Newsletter Subscription */}
-            <div className="pt-2">
-              <p className="text-xs font-semibold text-white uppercase tracking-wider mb-2">
-                Subscribe for exclusive trip deals
-              </p>
-              {subscribed ? (
-                <div className="p-3 bg-blue-950/60 border border-blue-500/40 text-blue-400 rounded-lg text-xs font-medium">
-                  Thanks for subscribing! Check your inbox soon.
-                </div>
-              ) : (
-                <form onSubmit={handleSubscribe} className="flex gap-2 max-w-sm">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    required
-                    className="w-full px-3.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 shrink-0"
-                  >
-                    <span>Join</span>
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                </form>
-              )}
-            </div>
           </div>
 
           {/* Top Destinations Column */}
@@ -120,23 +90,23 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <Link href="/destinations/interlaken" className="hover:text-blue-400 transition-colors">
-                  Interlaken, Switzerland
+                <Link href="/destinations" className="hover:text-blue-400 transition-colors">
+                  Swiss Alps, Switzerland
                 </Link>
               </li>
               <li>
-                <Link href="/destinations/rome" className="hover:text-blue-400 transition-colors">
-                  Rome, Italy
+                <Link href="/destinations" className="hover:text-blue-400 transition-colors">
+                  Bali, Indonesia
                 </Link>
               </li>
               <li>
-                <Link href="/destinations/tokyo" className="hover:text-blue-400 transition-colors">
-                  Tokyo, Japan
+                <Link href="/destinations" className="hover:text-blue-400 transition-colors">
+                  Maldives, Maldives
                 </Link>
               </li>
               <li>
-                <Link href="/destinations/maui" className="hover:text-blue-400 transition-colors">
-                  Maui, Hawaii
+                <Link href="/destinations" className="hover:text-blue-400 transition-colors">
+                  Vietnam, Vietnam
                 </Link>
               </li>
             </ul>
@@ -149,22 +119,22 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <Link href="/activities/outdoor-adventures" className="hover:text-blue-400 transition-colors">
+                <Link href="/toures&activities" className="hover:text-blue-400 transition-colors">
                   Outdoor Adventures
                 </Link>
               </li>
               <li>
-                <Link href="/activities/cultural-experiences" className="hover:text-blue-400 transition-colors">
+                <Link href="/toures&activities" className="hover:text-blue-400 transition-colors">
                   Cultural Experiences
                 </Link>
               </li>
               <li>
-                <Link href="/activities/scuba-water-sports" className="hover:text-blue-400 transition-colors">
+                <Link href="/toures&activities" className="hover:text-blue-400 transition-colors">
                   Scuba & Water Sports
                 </Link>
               </li>
               <li>
-                <Link href="/activities/food-culinary-tours" className="hover:text-blue-400 transition-colors">
+                <Link href="/toures&activities" className="hover:text-blue-400 transition-colors">
                   Food & Culinary Tours
                 </Link>
               </li>
@@ -194,7 +164,7 @@ export default function Footer() {
             {/* Social Links */}
             <div className="flex items-center gap-3 mt-6">
               <a
-                href="#"
+                href="https://www.facebook.com/"
                 className="p-2 bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white rounded-lg transition-colors"
                 aria-label="Facebook"
               >
@@ -204,7 +174,7 @@ export default function Footer() {
               </a>
 
               <a
-                href="#"
+                href="https://x.com/?lang=en"
                 className="p-2 bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white rounded-lg transition-colors"
                 aria-label="Twitter"
               >
@@ -214,7 +184,7 @@ export default function Footer() {
               </a>
 
               <a
-                href=""
+                href="https://www.instagram.com"
                 className="p-2 bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white rounded-lg transition-colors"
                 aria-label="Instagram"
               >
@@ -224,7 +194,7 @@ export default function Footer() {
               </a>
 
               <a
-                href="#"
+                href="https:https://in.linkedin.com"
                 className="p-2 bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white rounded-lg transition-colors"
                 aria-label="LinkedIn"
               >

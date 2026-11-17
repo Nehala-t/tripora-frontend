@@ -12,10 +12,7 @@ import {
     FiLock,
     FiEye,
     FiEyeOff,
-    FiCheck,
 } from 'react-icons/fi';
-import { FcGoogle } from 'react-icons/fc';
-import { FaApple } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -494,7 +491,7 @@ export default function SignUpPage() {
                             </div>
 
                             {/* Terms and conditions */}
-                            <div className="pt-1">
+                            {/* <div className="pt-1">
                                 <label className="flex cursor-pointer items-start gap-3">
                                     <input
                                         type="checkbox"
@@ -524,7 +521,7 @@ export default function SignUpPage() {
                                         {errors.agreeTerms.message}
                                     </p>
                                 )}
-                            </div>
+                            </div> */}
 
                             {/* Backend API error */}
                             {apiError && (
@@ -569,42 +566,7 @@ export default function SignUpPage() {
                             </button>
                         </form>
 
-                        {/* Social signup placeholders */}
-                        <div className="my-6 flex items-center gap-4">
-                            <div className="h-px flex-1 bg-gray-200" />
-                            <span className="text-xs text-gray-400">
-                                OR CONTINUE WITH
-                            </span>
-                            <div className="h-px flex-1 bg-gray-200" />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setApiError(
-                                        'Google signup is not configured yet.'
-                                    )
-                                }
-                                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-                            >
-                                <FcGoogle size={20} />
-                                Google
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setApiError(
-                                        'Apple signup is not configured yet.'
-                                    )
-                                }
-                                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-                            >
-                                <FaApple size={19} />
-                                Apple
-                            </button>
-                        </div>
+                      
 
                         <p className="mt-7 text-center text-sm text-gray-500">
                             Already have an account?{' '}
