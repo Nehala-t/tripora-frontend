@@ -18,7 +18,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import type { AppDispatch } from '@/redux/store';
-import { signupUser } from '@/redux/slices/authSlice';
+import { signupUser, loginUser } from '@/redux/slices/authSlice';
 import {
     signupSchema,
     type SignupFormValues,
@@ -34,29 +34,28 @@ export default function SignUpPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [apiError, setApiError] = useState('');
 
-    const {
-        register,
-        handleSubmit,
-        setValue,
-        watch,
-        clearErrors,
-        formState: { errors, isSubmitting },
-    } = useForm<SignupFormValues>({
-        resolver: yupResolver(signupSchema),
-        defaultValues: {
-            firstName: '',
-            lastName: '',
-            email: '',
-            phone: '',
-            password: '',
-            confirmPassword: '',
-            role: 'TRAVELER',
-            city: '',
-            businessName: '',
-            agreeTerms: false,
-        },
-        mode: 'onTouched',
-    });
+ const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    clearErrors,
+    formState: { errors, isSubmitting },
+} = useForm<SignupFormValues>({
+    resolver: yupResolver(signupSchema),
+    defaultValues: {
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        password: '',
+        confirmPassword: '',
+        role: 'TRAVELER',
+        city: '',
+        businessName: '',
+    },
+    mode: 'onTouched',
+});
 
     const role = watch('role');
 
@@ -70,52 +69,63 @@ export default function SignUpPage() {
         setApiError('');
     };
 
-    const onSubmit = async (values: SignupFormValues) => {
-        setApiError('');
+   
+const onSubmit = async (values: SignupFormValues) => {
+    setApiError('');
 
-        try {
-            const response = await dispatch(
-                signupUser({
-                    firstName: values.firstName.trim(),
-                    lastName: values.lastName.trim(),
-                    email: values.email.trim().toLowerCase(),
-                    phone: values.phone?.trim() || '',
-                    password: values.password,
-                    role: values.role,
-                    ...(values.role === 'OPERATOR'
-                        ? {
-                              city: values.city?.trim() || '',
-                              businessName: values.businessName?.trim() || '',
-                          }
-                        : {}),
-                })
-            ).unwrap();
+    try {
+        // Step 1: Register the user
+        const response = await dispatch(
+            signupUser({
+                firstName: values.firstName.trim(),
+                lastName: values.lastName.trim(),
+                email: values.email.trim().toLowerCase(),
+                phone: values.phone?.trim() || '',
+                password: values.password,
+                role: values.role,
+                ...(values.role === 'OPERATOR'
+                    ? {
+                          city: values.city?.trim() || '',
+                          businessName: values.businessName?.trim() || '',
+                      }
+                    : {}),
+            })
+        ).unwrap();
 
-            toast.success(
-                response.message ||
-                    'Account created successfully. Please sign in to continue.'
-            );
+        // Step 2: Log in the newly registered user
+        await dispatch(
+            loginUser({
+                email: values.email.trim().toLowerCase(),
+                password: values.password,
+            })
+        ).unwrap();
 
-            // Redirect according to the selected role
-            if (values.role === 'TRAVELER') {
-                router.push('/destinations');
-            }
-            if (values.role === 'OPERATOR') {
-                router.push('/operator/dashboard');
-            } else {
-                router.push('/login?registered=true');
-            }
-        } catch (error: unknown) {
-            const message =
-                typeof error === 'string'
-                    ? error
-                    : error instanceof Error
-                      ? error.message
-                      : 'Registration failed. Please try again.';
+        toast.success(
+            response.message || 'Account created successfully!'
+        );
 
-            setApiError(message);
+        // Step 3: Redirect according to role
+        if (values.role === 'OPERATOR') {
+            router.replace('/operator/dashboard');
+        } else {
+            router.replace('/destinations');
         }
-    };
+
+    } catch (error: unknown) {
+        console.error('Signup/Login failed:', error);
+
+        const message =
+            typeof error === 'string'
+                ? error
+                : error instanceof Error
+                  ? error.message
+                  : 'Registration failed. Please try again.';
+
+        setApiError(message);
+        toast.error(message);
+    }
+};
+
 
     const inputClass =
         'w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
