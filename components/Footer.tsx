@@ -142,18 +142,20 @@ export default function Footer() {
                         <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
                             Activity Types
                         </h3>
+
                         <ul className="space-y-2.5 text-sm">
+                           
                             <li>
                                 <Link
-                                    href="/toures&activities"
+                                    href="/toures&activities?category=adventure-tours"
                                     className="hover:text-blue-400 transition-colors"
                                 >
-                                    Outdoor Adventures
+                                    Adventure Tours
                                 </Link>
                             </li>
                             <li>
                                 <Link
-                                    href="/toures&activities"
+                                    href="/toures&activities?category=cultural-experiences"
                                     className="hover:text-blue-400 transition-colors"
                                 >
                                     Cultural Experiences
@@ -161,18 +163,18 @@ export default function Footer() {
                             </li>
                             <li>
                                 <Link
-                                    href="/toures&activities"
+                                    href="/toures&activities?category=nature-wildlife"
                                     className="hover:text-blue-400 transition-colors"
                                 >
-                                    Scuba & Water Sports
+                                    Nature & Wildlife
                                 </Link>
                             </li>
                             <li>
                                 <Link
-                                    href="/toures&activities"
+                                    href="/toures&activities?category=air-adventures"
                                     className="hover:text-blue-400 transition-colors"
                                 >
-                                    Food & Culinary Tours
+                                    Air Adventures
                                 </Link>
                             </li>
                         </ul>
@@ -183,36 +185,36 @@ export default function Footer() {
                         <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
                             Contact Us
                         </h3>
-                       <ul className="space-y-3 text-sm">
-    <li className="flex items-start gap-2.5 text-slate-400">
-        <MapPin className="w-4 h-4 text-blue-500 shrink-0 mt-1" />
-        <span>
-            TripOra HQ, Tech Park, Bangalore, India
-        </span>
-    </li>
+                        <ul className="space-y-3 text-sm">
+                            <li className="flex items-start gap-2.5 text-slate-400">
+                                <MapPin className="w-4 h-4 text-blue-500 shrink-0 mt-1" />
+                                <span>
+                                    TripOra HQ, Tech Park, Bangalore, India
+                                </span>
+                            </li>
 
-    <li>
-    <a
-        href="tel:+9118001234567"
-        className="flex items-center gap-2.5 text-slate-400 transition hover:text-blue-500"
-    >
-        <Phone className="w-4 h-4 shrink-0 text-blue-500" />
-        <span>+91 1800-123-4567</span>
-    </a>
-</li>
+                            <li>
+                                <a
+                                    href="tel:+9118001234567"
+                                    className="flex items-center gap-2.5 text-slate-400 transition hover:text-blue-500"
+                                >
+                                    <Phone className="w-4 h-4 shrink-0 text-blue-500" />
+                                    <span>+91 1800-123-4567</span>
+                                </a>
+                            </li>
 
-    <li>
-        <a
-            href="https://mail.google.com/mail/?view=cm&fs=1&to=support@tripora.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2.5 text-slate-400 transition hover:text-blue-500"
-        >
-            <Mail className="w-4 h-4 shrink-0 text-blue-500" />
-            <span>support@tripora.com</span>
-        </a>
-    </li>
-</ul>
+                            <li>
+                                <a
+                                    href="https://mail.google.com/mail/?view=cm&fs=1&to=support@tripora.com"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2.5 text-slate-400 transition hover:text-blue-500"
+                                >
+                                    <Mail className="w-4 h-4 shrink-0 text-blue-500" />
+                                    <span>support@tripora.com</span>
+                                </a>
+                            </li>
+                        </ul>
 
                         {/* Social Links */}
                         <div className="flex items-center gap-3 mt-6">
