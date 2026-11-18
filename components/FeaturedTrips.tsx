@@ -49,10 +49,10 @@ export default function FeaturedTrips() {
 
     return (
         <section className="bg-white  py-16 sm:py-8 ">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-15 ">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-22 ">
                 {/* SECTION HEADING */}
 
-                <div className="py-16 text-center md:py-20 lg:py-15 ">
+                <div className="py-16 text-center md:py-20 lg:py-15 " >
                     <span className="text-sm font-bold uppercase tracking-[0.2em] text-sky-600">
                         Discover Your Next Adventure
                     </span>
@@ -70,7 +70,7 @@ export default function FeaturedTrips() {
 
                 {/* LOADING SKELETON */}
                 {toursLoading && (
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 ">
                         {Array.from({ length: 4 }).map((_, index) => (
                             <div
                                 key={index}
@@ -89,7 +89,7 @@ export default function FeaturedTrips() {
 
                 {/* TOUR CARDS */}
                 {!toursLoading && featuredTours.length > 0 && (
-                    <div className="grid grid-cols-1 gap-4 px-3 sm:grid-cols-2 sm:gap-5 sm:px-4 md:px-6 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 px-3 sm:grid-cols-2 sm:gap-5 sm:px-4 md:px-0 lg:grid-cols-3 ">
                         {' '}
                         {featuredTours.map((tour) => {
                             const destination =
