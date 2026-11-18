@@ -87,10 +87,11 @@ export default function FeaturedTrips() {
                     </div>
                 )}
 
-
                 {/* TOUR CARDS */}
                 {!toursLoading && featuredTours.length > 0 && (
-<div className="grid grid-cols-1 gap-4 px-3 sm:grid-cols-2 sm:gap-5 sm:px-4 md:px-6 lg:grid-cols-3">                        {featuredTours.map((tour) => {
+                    <div className="grid grid-cols-1 gap-4 px-3 sm:grid-cols-2 sm:gap-5 sm:px-4 md:px-6 lg:grid-cols-3">
+                        {' '}
+                        {featuredTours.map((tour) => {
                             const destination =
                                 typeof tour.destinationId === 'object'
                                     ? tour.destinationId

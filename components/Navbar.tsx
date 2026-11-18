@@ -200,8 +200,8 @@ export default function Navbar() {
               avatarUrl: reduxUser.profileImage?.url || undefined,
 
               emailVerified: Boolean(
-    reduxUser.emailVerified ?? reduxUser.emailVerified
-),
+                  reduxUser.emailVerified ?? reduxUser.emailVerified
+              ),
           }
         : null;
 
@@ -584,7 +584,7 @@ export default function Navbar() {
                                                 </Link>
 
                                                 {/* User-only menu items */}
-{reduxUser?.role === 'user' && (
+                                                {reduxUser?.role === 'user' && (
                                                     <>
                                                         <Link
                                                             href="/my-bookings"
@@ -604,8 +604,6 @@ export default function Navbar() {
                                                             />
                                                         </Link>
 
-
-                                                        
                                                         <Link
                                                             href="/wishlist"
                                                             onClick={closeMenus}
@@ -929,17 +927,17 @@ export default function Navbar() {
                                 </span>
                             </Link>
 
-                           {/* Wishlist - Traveler only */}
-{reduxUser?.role === 'user' && (
-    <Link
-        href="/wishlist"
-        onClick={closeMenus}
-        className="flex items-center gap-3 rounded-full bg-white/10 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-white/20"
-    >
-        <FiHeart size={18} />
-        My Wishlist
-    </Link>
-)}
+                            {/* Wishlist - Traveler only */}
+                            {reduxUser?.role === 'user' && (
+                                <Link
+                                    href="/wishlist"
+                                    onClick={closeMenus}
+                                    className="flex items-center gap-3 rounded-full bg-white/10 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-white/20"
+                                >
+                                    <FiHeart size={18} />
+                                    My Wishlist
+                                </Link>
+                            )}
 
                             <Link
                                 href="/help"

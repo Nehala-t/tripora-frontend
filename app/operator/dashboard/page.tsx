@@ -920,11 +920,11 @@ export default function OperatorDashboardPage() {
     };
 
     const navClass = (isActive: boolean) =>
-    `flex w-full items-center justify-center gap-3 rounded-xl px-2 py-2.5 text-xs font-bold transition-all sm:justify-start sm:px-3.5 ${
-        isActive
-            ? 'bg-sky-50 text-sky-600'
-            : 'text-slate-600 hover:bg-slate-50'
-    }`;
+        `flex w-full items-center justify-center gap-3 rounded-xl px-2 py-2.5 text-xs font-bold transition-all sm:justify-start sm:px-3.5 ${
+            isActive
+                ? 'bg-sky-50 text-sky-600'
+                : 'text-slate-600 hover:bg-slate-50'
+        }`;
 
     const tourStatuses = ['', 'draft', 'published'];
 
@@ -941,85 +941,87 @@ export default function OperatorDashboardPage() {
     return (
         <div className="mt-24 flex h-[calc(100vh-6rem)] overflow-hidden bg-slate-50 text-slate-900">
             {/* SIDEBAR */}
-<aside className="flex w-16 shrink-0 flex-col border-r border-slate-200 bg-white sm:w-56 md:w-64">
-    <div className="flex h-16 items-center justify-center gap-3 border-b border-slate-100 px-2 sm:justify-start sm:px-4 md:px-6">
-        <div className="shrink-0 rounded-xl bg-sky-600 p-2 text-white shadow-md shadow-sky-600/20">
-            <Store className="h-5 w-5" />
-        </div>
+            <aside className="flex w-16 shrink-0 flex-col border-r border-slate-200 bg-white sm:w-56 md:w-64">
+                <div className="flex h-16 items-center justify-center gap-3 border-b border-slate-100 px-2 sm:justify-start sm:px-4 md:px-6">
+                    <div className="shrink-0 rounded-xl bg-sky-600 p-2 text-white shadow-md shadow-sky-600/20">
+                        <Store className="h-5 w-5" />
+                    </div>
 
-        <span className="hidden text-lg font-extrabold tracking-tight sm:inline">
-            Operator Hub
-        </span>
-    </div>
+                    <span className="hidden text-lg font-extrabold tracking-tight sm:inline">
+                        Operator Hub
+                    </span>
+                </div>
 
-    <nav className="space-y-1 p-2 sm:p-3 md:p-4">
-        <button
-            type="button"
-            title="Overview"
-            onClick={() => setActiveView('overview')}
-            className={navClass(activeView === 'overview')}
-        >
-            <LayoutDashboard className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Overview</span>
-        </button>
+                <nav className="space-y-1 p-2 sm:p-3 md:p-4">
+                    <button
+                        type="button"
+                        title="Overview"
+                        onClick={() => setActiveView('overview')}
+                        className={navClass(activeView === 'overview')}
+                    >
+                        <LayoutDashboard className="h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline">Overview</span>
+                    </button>
 
-        <button
-            type="button"
-            title="Manage Tours"
-            onClick={() => setActiveView('tours')}
-            className={navClass(
-                activeView === 'tours' || activeView === 'edit-tour'
-            )}
-        >
-            <Compass className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Manage Tours</span>
-        </button>
+                    <button
+                        type="button"
+                        title="Manage Tours"
+                        onClick={() => setActiveView('tours')}
+                        className={navClass(
+                            activeView === 'tours' || activeView === 'edit-tour'
+                        )}
+                    >
+                        <Compass className="h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline">Manage Tours</span>
+                    </button>
 
-        <button
-            type="button"
-            title="Add New Tour"
-            onClick={openAddTour}
-            className={navClass(activeView === 'add-tour')}
-        >
-            <PlusCircle className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Add New Tour</span>
-        </button>
+                    <button
+                        type="button"
+                        title="Add New Tour"
+                        onClick={openAddTour}
+                        className={navClass(activeView === 'add-tour')}
+                    >
+                        <PlusCircle className="h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline">Add New Tour</span>
+                    </button>
 
-        <button
-            type="button"
-            title="Manage Reviews"
-            onClick={() => setActiveView('reviews')}
-            className={navClass(activeView === 'reviews')}
-        >
-            <Star className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Manage Reviews</span>
-        </button>
+                    <button
+                        type="button"
+                        title="Manage Reviews"
+                        onClick={() => setActiveView('reviews')}
+                        className={navClass(activeView === 'reviews')}
+                    >
+                        <Star className="h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline">Manage Reviews</span>
+                    </button>
 
-        <button
-            type="button"
-            title="Orders & Bookings"
-            onClick={() => setActiveView('orders')}
-            className={navClass(activeView === 'orders')}
-        >
-            <ShoppingBag className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Orders &amp; Bookings</span>
-        </button>
+                    <button
+                        type="button"
+                        title="Orders & Bookings"
+                        onClick={() => setActiveView('orders')}
+                        className={navClass(activeView === 'orders')}
+                    >
+                        <ShoppingBag className="h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline">
+                            Orders &amp; Bookings
+                        </span>
+                    </button>
 
-        <button
-            type="button"
-            title="Availability"
-            onClick={() => {
-                setActiveView('availability');
-                dispatch(clearAvailabilityError());
-                dispatch(clearAvailabilityMessage());
-            }}
-            className={navClass(activeView === 'availability')}
-        >
-            <CalendarDays className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Availability</span>
-        </button>
-    </nav>
-</aside>
+                    <button
+                        type="button"
+                        title="Availability"
+                        onClick={() => {
+                            setActiveView('availability');
+                            dispatch(clearAvailabilityError());
+                            dispatch(clearAvailabilityMessage());
+                        }}
+                        className={navClass(activeView === 'availability')}
+                    >
+                        <CalendarDays className="h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline">Availability</span>
+                    </button>
+                </nav>
+            </aside>
 
             {/* MAIN CONTENT */}
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -1193,8 +1195,7 @@ export default function OperatorDashboardPage() {
                         </div>
                     )}
 
-                    {
-                    /*  MANAGE TOURS */}
+                    {/*  MANAGE TOURS */}
 
                     {activeView === 'tours' && (
                         <div className="space-y-6">

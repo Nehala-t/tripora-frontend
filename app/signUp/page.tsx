@@ -34,28 +34,28 @@ export default function SignUpPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [apiError, setApiError] = useState('');
 
- const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    clearErrors,
-    formState: { errors, isSubmitting },
-} = useForm<SignupFormValues>({
-    resolver: yupResolver(signupSchema),
-    defaultValues: {
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-        role: 'TRAVELER',
-        city: '',
-        businessName: '',
-    },
-    mode: 'onTouched',
-});
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        clearErrors,
+        formState: { errors, isSubmitting },
+    } = useForm<SignupFormValues>({
+        resolver: yupResolver(signupSchema),
+        defaultValues: {
+            firstName: '',
+            lastName: '',
+            email: '',
+            phone: '',
+            password: '',
+            confirmPassword: '',
+            role: 'TRAVELER',
+            city: '',
+            businessName: '',
+        },
+        mode: 'onTouched',
+    });
 
     const role = watch('role');
 
@@ -69,63 +69,58 @@ export default function SignUpPage() {
         setApiError('');
     };
 
-   
-const onSubmit = async (values: SignupFormValues) => {
-    setApiError('');
+    const onSubmit = async (values: SignupFormValues) => {
+        setApiError('');
 
-    try {
-        // Step 1: Register the user
-        const response = await dispatch(
-            signupUser({
-                firstName: values.firstName.trim(),
-                lastName: values.lastName.trim(),
-                email: values.email.trim().toLowerCase(),
-                phone: values.phone?.trim() || '',
-                password: values.password,
-                role: values.role,
-                ...(values.role === 'OPERATOR'
-                    ? {
-                          city: values.city?.trim() || '',
-                          businessName: values.businessName?.trim() || '',
-                      }
-                    : {}),
-            })
-        ).unwrap();
+        try {
+            // Step 1: Register the user
+            const response = await dispatch(
+                signupUser({
+                    firstName: values.firstName.trim(),
+                    lastName: values.lastName.trim(),
+                    email: values.email.trim().toLowerCase(),
+                    phone: values.phone?.trim() || '',
+                    password: values.password,
+                    role: values.role,
+                    ...(values.role === 'OPERATOR'
+                        ? {
+                              city: values.city?.trim() || '',
+                              businessName: values.businessName?.trim() || '',
+                          }
+                        : {}),
+                })
+            ).unwrap();
 
-        // Step 2: Log in the newly registered user
-        await dispatch(
-            loginUser({
-                email: values.email.trim().toLowerCase(),
-                password: values.password,
-            })
-        ).unwrap();
+            // Step 2: Log in the newly registered user
+            await dispatch(
+                loginUser({
+                    email: values.email.trim().toLowerCase(),
+                    password: values.password,
+                })
+            ).unwrap();
 
-        toast.success(
-            response.message || 'Account created successfully!'
-        );
+            toast.success(response.message || 'Account created successfully!');
 
-        // Step 3: Redirect according to role
-        if (values.role === 'OPERATOR') {
-            router.replace('/operator/dashboard');
-        } else {
-            router.replace('/destinations');
+            // Step 3: Redirect according to role
+            if (values.role === 'OPERATOR') {
+                router.replace('/operator/dashboard');
+            } else {
+                router.replace('/destinations');
+            }
+        } catch (error: unknown) {
+            console.error('Signup/Login failed:', error);
+
+            const message =
+                typeof error === 'string'
+                    ? error
+                    : error instanceof Error
+                      ? error.message
+                      : 'Registration failed. Please try again.';
+
+            setApiError(message);
+            toast.error(message);
         }
-
-    } catch (error: unknown) {
-        console.error('Signup/Login failed:', error);
-
-        const message =
-            typeof error === 'string'
-                ? error
-                : error instanceof Error
-                  ? error.message
-                  : 'Registration failed. Please try again.';
-
-        setApiError(message);
-        toast.error(message);
-    }
-};
-
+    };
 
     const inputClass =
         'w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
@@ -138,10 +133,10 @@ const onSubmit = async (values: SignupFormValues) => {
     const errorClass = 'mt-1 text-xs text-red-600';
 
     return (
-    <main className="relative min-h-screen bg-white">
-        {/* Signup content below the absolute navbar */}
-        <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 pb-10 pt-28 sm:px-6 sm:pb-10 sm:pt-32 lg:px-8">
-            <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-xl lg:grid-cols-2">
+        <main className="relative min-h-screen bg-white">
+            {/* Signup content below the absolute navbar */}
+            <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 pb-10 pt-28 sm:px-6 sm:pb-10 sm:pt-32 lg:px-8">
+                <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-xl lg:grid-cols-2">
                     {/* Left introduction panel */}
                     <section className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-10 text-white lg:flex">
                         <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/10" />
@@ -576,8 +571,6 @@ const onSubmit = async (values: SignupFormValues) => {
                             </button>
                         </form>
 
-                      
-
                         <p className="mt-7 text-center text-sm text-gray-500">
                             Already have an account?{' '}
                             <Link
@@ -588,8 +581,8 @@ const onSubmit = async (values: SignupFormValues) => {
                             </Link>
                         </p>
                     </section>
-                        </div>
-        </div>
-    </main>
-);
+                </div>
+            </div>
+        </main>
+    );
 }
