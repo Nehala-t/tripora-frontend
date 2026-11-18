@@ -276,8 +276,8 @@ export default function Footer() {
                 {/* Bottom Copyright */}
                 <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 gap-4">
                     <p>
-                        © {new Date().getFullYear()} TripOra Technologies Pvt.
-                        Ltd. All rights reserved.
+                        © {new Date().getFullYear()} TripOra. All rights reserved. Built with passion.
+
                     </p>
                     <div className="flex items-center gap-1 text-slate-500">
                         <span>Crafted with</span>
