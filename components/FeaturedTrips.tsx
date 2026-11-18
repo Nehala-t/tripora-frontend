@@ -48,11 +48,11 @@ export default function FeaturedTrips() {
         .slice(0, 3);
 
     return (
-        <section className="bg-white py-16 sm:py-20">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <section className="bg-white  py-16 sm:py-8 ">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ">
                 {/* SECTION HEADING */}
 
-                <div className="py-16 text-center md:py-20 lg:py-24">
+                <div className="py-16 text-center md:py-20 lg:py-15 ">
                     <span className="text-sm font-bold uppercase tracking-[0.2em] text-sky-600">
                         Discover Your Next Adventure
                     </span>
@@ -205,7 +205,7 @@ export default function FeaturedTrips() {
                     <div className="mt-10 text-center">
                         <Link
                             href="/toures&activities"
-                            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
+                            className="group inline-flex items-center gap-2 rounded-full border border-sky-600 px-7 py-3 text-sm font-semibold text-sky-700 transition-all duration-300 hover:bg-sky-600 hover:text-white"
                         >
                             Explore All Trips
                             <span>→</span>

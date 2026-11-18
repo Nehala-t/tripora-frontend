@@ -130,11 +130,11 @@ export default function AllDestination() {
 
     return (
         <section
-            className={`px-4 ${isHomePage ? 'md:px-20' : 'md:px-0 md:mb-4'}`}
+            className={`px-4 ${isHomePage ? 'md:px-20 lg:pt-6' : 'md:px-0 md:mb-4'}`}
         >
             {/* SECTION HEADING */}
 
-            <div className="py-16 text-center md:py-20 lg:py-24">
+            <div className="py-16 text-center md:py-20 lg:py-15">
                 <span className="text-sm font-bold uppercase tracking-[0.2em] text-sky-600">
                     Discover Your Next Adventure
                 </span>
