@@ -263,12 +263,12 @@ export default function NotificationDropdown({
         aria-label="Open notifications"
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className="relative flex h-10 w-10 items-center justify-center rounded-full
-          border border-gray-200 bg-white text-gray-700
-          transition-all duration-200 hover:border-blue-200
-          hover:bg-blue-50 hover:text-blue-600
-          focus:outline-none focus:ring-2 focus:ring-blue-500
-          focus:ring-offset-2"
+       className="relative flex h-9 w-9 items-center justify-center rounded-full
+  border border-gray-200 bg-white text-gray-700
+  transition-all duration-200 hover:border-blue-200
+  hover:bg-blue-50 hover:text-blue-600
+  focus:outline-none focus:ring-2 focus:ring-blue-500
+  focus:ring-offset-2 sm:h-10 sm:w-10"
       >
         <FiBell className="h-5 w-5" />
 
@@ -289,10 +289,13 @@ export default function NotificationDropdown({
         <div
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 top-full z-[100] mt-3
-            w-[min(92vw,400px)] overflow-hidden rounded-2xl
-            border border-gray-200 bg-white shadow-2xl
-            shadow-gray-900/10"
+          className="absolute -right-3 top-full z-[100] mt-2
+  w-[min(88vw,340px)] overflow-hidden rounded-2xl
+  border border-gray-200 bg-white shadow-2xl
+  shadow-gray-900/10
+  sm:mt-3 sm:w-[min(90vw,370px)]
+  md:right-0 md:w-[min(90vw,400px)]
+  lg:mt-3 lg:w-[min(92vw,400px)]"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-4">
@@ -355,7 +358,9 @@ export default function NotificationDropdown({
           )}
 
           {/* Notification list */}
-          <div className="max-h-[min(65vh,440px)] overflow-y-auto overscroll-contain">
+          <div className="max-h-[55vh] overflow-y-auto overscroll-contain
+  sm:max-h-[60vh] md:max-h-[min(65vh,440px)]
+  lg:max-h-[min(65vh,440px)]">
             {loading && notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-12">
                 <FiLoader className="h-7 w-7 animate-spin text-blue-600" />
