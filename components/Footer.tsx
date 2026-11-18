@@ -184,7 +184,7 @@ export default function Footer() {
               </a>
 
               <a
-                href="https://www.instagram.com"
+                href="https://www.instagram.com/"
                 className="p-2 bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white rounded-lg transition-colors"
                 aria-label="Instagram"
               >
@@ -194,7 +194,7 @@ export default function Footer() {
               </a>
 
               <a
-                href="https:https://in.linkedin.com"
+                href="https://www.linkedin.com/"
                 className="p-2 bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white rounded-lg transition-colors"
                 aria-label="LinkedIn"
               >
