@@ -49,7 +49,7 @@ export default function FeaturedTrips() {
 
     return (
         <section className="bg-white  py-16 sm:py-8 ">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-15 ">
                 {/* SECTION HEADING */}
 
                 <div className="py-16 text-center md:py-20 lg:py-15 ">
